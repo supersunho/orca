@@ -9,6 +9,7 @@ import {
   type GitHistoryExecutor,
   type GitHistoryResult
 } from './git-history'
+import { buildDefaultGitHistoryColorMap, buildGitHistoryViewModels } from './git-history-graph'
 
 const ENABLED = process.env.ORCA_GIT_GRAPH_BENCH === '1'
 const COMMITS = 100_000
@@ -93,19 +94,35 @@ describe.skipIf(!ENABLED)('git graph history 100k commits / 1k refs', () => {
         search: 'bench commit 99999'
       })
     )
+    const renderStartedAt = performance.now()
+    const viewModels = buildGitHistoryViewModels(
+      initial.result.items,
+      buildDefaultGitHistoryColorMap(initial.result),
+      initial.result.currentRef,
+      initial.result.remoteRef,
+      initial.result.baseRef,
+      false,
+      false,
+      initial.result.mergeBase
+    )
+    const renderMs = Math.round(performance.now() - renderStartedAt)
 
     expect(initial.result.items).toHaveLength(300)
     expect(initial.result.scope).toBe('all-refs')
     expect(initial.result.hasMore).toBe(true)
     expect(loadMore.result.items).toHaveLength(100)
     expect(search.result.items[0]?.subject).toContain('bench commit 99999')
+    expect(viewModels).toHaveLength(300)
     expect(refCount).toBeGreaterThanOrEqual(REFS)
 
     console.log(
       JSON.stringify({
         commits: COMMITS,
         refs: refCount,
-        metrics: [initial, loadMore, search].map(({ label, ms }) => ({ label, ms }))
+        metrics: [
+          ...[initial, loadMore, search].map(({ label, ms }) => ({ label, ms })),
+          { label: 'renderer-300', ms: renderMs }
+        ]
       })
     )
   }, 120_000)
