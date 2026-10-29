@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
-import { findWebGitGraphFallbackTab } from './web-git-graph-fallback'
+// @vitest-environment happy-dom
+import { renderHook } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { findWebGitGraphFallbackTab, useWebGitGraphFallback } from './web-git-graph-fallback'
 
 const graph = { id: 'graph', entityId: 'graph', contentType: 'git-graph' as const }
 
@@ -23,5 +25,27 @@ describe('findWebGitGraphFallbackTab', () => {
 
   it('returns null for a graph-only group', () => {
     expect(findWebGitGraphFallbackTab([graph])).toBeNull()
+  })
+
+  it('activates a supported fallback once and leaves graph-only groups alone', () => {
+    const commands = {
+      activateTerminal: vi.fn(),
+      activateAgentSession: vi.fn(),
+      activateEditor: vi.fn(),
+      activateBrowser: vi.fn()
+    }
+    const terminal = { id: 'terminal', entityId: 'pty', contentType: 'terminal' as const }
+    const { rerender } = renderHook(
+      ({ active, tabs }) => useWebGitGraphFallback({ active, tabs, commands }),
+      { initialProps: { active: true, tabs: [graph, terminal] } }
+    )
+
+    expect(commands.activateTerminal).toHaveBeenCalledWith('pty')
+    rerender({ active: true, tabs: [graph, terminal] })
+    expect(commands.activateTerminal).toHaveBeenCalledTimes(1)
+
+    rerender({ active: true, tabs: [graph] })
+    expect(commands.activateEditor).not.toHaveBeenCalled()
+    expect(commands.activateTerminal).toHaveBeenCalledTimes(1)
   })
 })

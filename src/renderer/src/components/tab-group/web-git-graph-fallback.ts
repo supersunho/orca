@@ -25,7 +25,6 @@ type FallbackCommands = {
   activateAgentSession: (id: string) => void
   activateEditor: (id: string) => void
   activateBrowser: (id: string) => void
-  newTerminalTab: () => void
 }
 
 export function useWebGitGraphFallback({
@@ -49,8 +48,9 @@ export function useWebGitGraphFallback({
     requestedRef.current = true
     const fallback = findWebGitGraphFallbackTab(tabs)
     if (!fallback) {
-      commands.newTerminalTab()
-    } else if (fallback.contentType === 'terminal') {
+      return
+    }
+    if (fallback.contentType === 'terminal') {
       commands.activateTerminal(fallback.entityId)
     } else if (fallback.contentType === 'agent-session') {
       commands.activateAgentSession(fallback.id)

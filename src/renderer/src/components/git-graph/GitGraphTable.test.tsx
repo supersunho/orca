@@ -4,6 +4,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GitHistoryItem } from '../../../../shared/git-history'
 import type { GitHistoryItemViewModel } from '../../../../shared/git-history-graph'
 import type { GitGraphActionMenuHandlers } from './GitGraphActionMenu'
+
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 32,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        key: `row-${index}`,
+        start: index * 32
+      })),
+    measureElement: vi.fn(),
+    scrollToIndex: vi.fn()
+  })
+}))
 import { GitGraphTable } from './GitGraphTable'
 import { defaultGitGraphViewSettings } from './git-graph-view-settings'
 

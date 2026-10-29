@@ -113,6 +113,25 @@ const viewModels: GitHistoryItemViewModel[] = [
   }
 ]
 
+const largeItems = Array.from({ length: 1_000 }, (_, index) => ({
+  id: `${index.toString(16).padStart(8, '0')}00000000000000000000000000000000`,
+  parentIds:
+    index === 999
+      ? []
+      : [`${(index + 1).toString(16).padStart(8, '0')}00000000000000000000000000000000`],
+  subject: `Commit ${index + 1}`,
+  message: `Commit ${index + 1}`,
+  displayId: index.toString(16).padStart(7, '0'),
+  author: index % 2 === 0 ? 'Sunho' : 'Agent',
+  timestamp: timestamps.newest - index * 60_000
+}))
+
+const largeViewModels = buildGitHistoryViewModels(largeItems, new Map(), {
+  id: 'refs/heads/main',
+  name: 'main',
+  revision: largeItems[0]?.id
+})
+
 const handlers: GitGraphActionMenuHandlers = {
   onCheckoutRef: () => undefined,
   onCreateBranch: () => undefined,
@@ -130,10 +149,15 @@ const handlers: GitGraphActionMenuHandlers = {
   onCompare: () => undefined
 }
 
-function table(width: number, settings = defaultGitGraphViewSettings(), models = viewModels) {
+function table(
+  width: number,
+  settings = defaultGitGraphViewSettings(),
+  models = viewModels,
+  height?: number
+) {
   const headItem = models[0]?.historyItem
   return (
-    <div style={{ width }}>
+    <div style={{ width, ...(height ? { height } : {}) }}>
       <GitGraphTable
         status="idle"
         result={{
@@ -186,4 +210,9 @@ export const compact = defineFixture({
 export const mergeMuted = defineFixture({
   width: 900,
   render: () => table(900, { ...defaultGitGraphViewSettings(), muteMerges: true }, mergeViewModels)
+})
+
+export const large = defineFixture({
+  width: 900,
+  render: () => table(900, defaultGitGraphViewSettings(), largeViewModels, 420)
 })

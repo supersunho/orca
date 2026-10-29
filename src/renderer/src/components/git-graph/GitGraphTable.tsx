@@ -1,4 +1,5 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import type {
   GitHistoryItem,
   GitHistoryItemRef,
@@ -12,21 +13,30 @@ import { translate } from '@/i18n/i18n'
 import { GitGraphActionMenu, type GitGraphActionMenuHandlers } from './GitGraphActionMenu'
 import { GitGraphStashRow, GitGraphUncommittedRow } from './GitGraphAuxRows'
 import { GitGraphRow } from './GitGraphRow'
+import { GitGraphTableHeader, type ColumnResizeKey } from './GitGraphTableHeader'
 import { useMeasuredWidth } from '../right-sidebar/right-sidebar-measured-width'
 import {
   GIT_GRAPH_AUTHOR_WIDTH,
   GIT_GRAPH_DATE_WIDTH,
   effectiveGitGraphViewSettings,
-  gitGraphGridTemplate,
   type GitGraphViewSettings
 } from './git-graph-view-settings'
 
-type ColumnResizeKey = 'authorWidth' | 'dateWidth'
 type ColumnResize = { key: ColumnResizeKey; startX: number; startWidth: number; width: number }
 const COLUMN_WIDTH_BOUNDS = {
   authorWidth: GIT_GRAPH_AUTHOR_WIDTH,
   dateWidth: GIT_GRAPH_DATE_WIDTH
 }
+
+type GitGraphTableEntry =
+  | { kind: 'uncommitted' }
+  | { kind: 'stash'; stash: GitGraphStash }
+  | { kind: 'loading' }
+  | { kind: 'error'; message: string }
+  | { kind: 'empty' }
+  | { kind: 'row'; viewModel: GitHistoryItemViewModel; modelIndex: number }
+  | { kind: 'load-more' }
+  | { kind: 'trailing-error'; message: string }
 
 export function GitGraphTable({
   status,
@@ -84,6 +94,7 @@ export function GitGraphTable({
   onLoadMore: () => void
 }): React.JSX.Element {
   const tableRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [tableWidth, setTableWidth] = useState<number | null>(null)
   const [resize, setResize] = useState<ColumnResize | null>(null)
   const measuredRef = useMeasuredWidth(setTableWidth)
@@ -98,6 +109,77 @@ export function GitGraphTable({
   const previewSettings = resize
     ? { ...effectiveSettings, [resize.key]: resize.width }
     : effectiveSettings
+
+  const entries = useMemo<GitGraphTableEntry[]>(() => {
+    const next: GitGraphTableEntry[] = []
+    if (hasWorktreeStatus && hasWorkingTreeChanges) {
+      next.push({ kind: 'uncommitted' })
+    }
+    if (showStashRows) {
+      stashes.forEach((stash) => {
+        next.push({ kind: 'stash', stash })
+      })
+    }
+    if (status === 'loading' && !result) {
+      next.push({ kind: 'loading' })
+    }
+    if (status === 'error' && !result) {
+      next.push({ kind: 'error', message: error ?? '' })
+    }
+    if (
+      result &&
+      result.items.length === 0 &&
+      !hasWorkingTreeChanges &&
+      !statusReadError &&
+      (!showStashRows || stashes.length === 0)
+    ) {
+      next.push({ kind: 'empty' })
+    }
+    viewModels.forEach((viewModel, modelIndex) => {
+      next.push({ kind: 'row', viewModel, modelIndex })
+    })
+    if (result?.hasMore) {
+      next.push({ kind: 'load-more' })
+    }
+    if (status === 'error' && result) {
+      next.push({ kind: 'trailing-error', message: error ?? '' })
+    }
+    return next
+  }, [
+    error,
+    hasWorkingTreeChanges,
+    hasWorktreeStatus,
+    result,
+    showStashRows,
+    stashes,
+    status,
+    statusReadError,
+    viewModels
+  ])
+
+  const virtualizer = useVirtualizer({
+    count: entries.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) => {
+      const kind = entries[index]?.kind
+      return kind === 'load-more' ? 44 : kind === 'uncommitted' || kind === 'stash' ? 29 : 32
+    },
+    overscan: 10,
+    initialRect: { width: 0, height: 600 },
+    getItemKey: (index) => {
+      const entry = entries[index]
+      if (!entry) {
+        return index
+      }
+      if (entry.kind === 'row') {
+        return `row:${entry.viewModel.historyItem.id}`
+      }
+      if (entry.kind === 'stash') {
+        return `stash:${entry.stash.oid}`
+      }
+      return entry.kind
+    }
+  })
 
   const startResize = (key: ColumnResizeKey, event: React.PointerEvent<HTMLSpanElement>): void => {
     event.preventDefault()
@@ -156,142 +238,96 @@ export function GitGraphTable({
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
       return
     }
-    const rows = Array.from(
-      tableRef.current?.querySelectorAll<HTMLElement>('[data-testid="git-graph-row"]') ?? []
-    )
-    const current = rows.findIndex((row) => row === target || row.contains(target))
-    if (current === -1) {
+    const row = target.closest<HTMLElement>('[data-git-graph-model-index]')
+    const current = Number(row?.dataset.gitGraphModelIndex)
+    if (!Number.isInteger(current) || current < 0 || viewModels.length === 0) {
       return
     }
     event.preventDefault()
+    const lastIndex = viewModels.length - 1
     const nextIndex =
       event.key === 'Home'
         ? 0
         : event.key === 'End'
-          ? rows.length - 1
-          : Math.min(rows.length - 1, Math.max(0, current + (event.key === 'ArrowDown' ? 1 : -1)))
-    rows[nextIndex]?.focus()
+          ? lastIndex
+          : Math.min(lastIndex, Math.max(0, current + (event.key === 'ArrowDown' ? 1 : -1)))
+    const nextEntryIndex = entries.findIndex(
+      (entry) => entry.kind === 'row' && entry.modelIndex === nextIndex
+    )
+    if (nextEntryIndex !== -1) {
+      virtualizer.scrollToIndex(nextEntryIndex, { align: 'auto' })
+    }
+    const nextRowSelector = `[data-git-graph-model-index="${nextIndex}"] [data-testid="git-graph-row"]`
+    const focusRow = (): void => {
+      tableRef.current?.querySelector<HTMLElement>(nextRowSelector)?.focus()
+    }
+    const mountedRow = tableRef.current?.querySelector<HTMLElement>(nextRowSelector)
+    if (mountedRow) {
+      mountedRow.focus()
+    } else {
+      requestAnimationFrame(focusRow)
+    }
     const destination = viewModels[nextIndex]
     if (destination) {
       onNavigate(destination.historyItem)
     }
   }
 
-  return (
-    <div
-      ref={setTableNode}
-      className="flex min-h-0 flex-1 flex-col"
-      onKeyDown={handleRowNavigation}
-    >
-      <div
-        className="grid shrink-0 gap-x-2 border-b border-border bg-muted/30 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
-        style={{ gridTemplateColumns: gitGraphGridTemplate(previewSettings) }}
-      >
-        <span />
-        <span>{translate('auto.components.git.graph.pane.description', 'Description')}</span>
-        {previewSettings.showAuthor && (
-          <span className="relative flex min-w-0 items-center">
-            {translate('auto.components.git.graph.pane.author', 'Author')}
-            <span
-              role="separator"
-              aria-orientation="vertical"
-              aria-label={translate(
-                'auto.components.git.graph.pane.resizeAuthor',
-                'Resize author column'
-              )}
-              aria-valuemin={GIT_GRAPH_AUTHOR_WIDTH.min}
-              aria-valuemax={GIT_GRAPH_AUTHOR_WIDTH.max}
-              aria-valuenow={previewSettings.authorWidth}
-              tabIndex={0}
-              className="absolute inset-y-0 -right-1 w-2 cursor-col-resize touch-none hover:bg-border"
-              onPointerDown={(event) => startResize('authorWidth', event)}
-              onPointerMove={moveResize}
-              onPointerUp={finishResize}
-              onPointerCancel={() => setResize(null)}
-              onKeyDown={(event) => resizeWithKeyboard('authorWidth', event)}
-            />
-          </span>
-        )}
-        {previewSettings.showDate && (
-          <span className="relative flex min-w-0 items-center">
-            {translate('auto.components.git.graph.pane.date', 'Date')}
-            <span
-              role="separator"
-              aria-orientation="vertical"
-              aria-label={translate(
-                'auto.components.git.graph.pane.resizeDate',
-                'Resize date column'
-              )}
-              aria-valuemin={GIT_GRAPH_DATE_WIDTH.min}
-              aria-valuemax={GIT_GRAPH_DATE_WIDTH.max}
-              aria-valuenow={previewSettings.dateWidth}
-              tabIndex={0}
-              className="absolute inset-y-0 -right-1 w-2 cursor-col-resize touch-none hover:bg-border"
-              onPointerDown={(event) => startResize('dateWidth', event)}
-              onPointerMove={moveResize}
-              onPointerUp={finishResize}
-              onPointerCancel={() => setResize(null)}
-              onKeyDown={(event) => resizeWithKeyboard('dateWidth', event)}
-            />
-          </span>
-        )}
-        <span>{translate('auto.components.git.graph.pane.commit', 'Commit')}</span>
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto scrollbar-sleek">
-        {hasWorktreeStatus && hasWorkingTreeChanges && (
+  const renderEntry = (entry: GitGraphTableEntry): React.JSX.Element | null => {
+    switch (entry.kind) {
+      case 'uncommitted':
+        return (
           <GitGraphUncommittedRow
             changeCount={workingTreeChangeCount}
             statusCapped={statusCapped}
             busy={actionBusy}
             onStash={onStash}
           />
-        )}
-        {showStashRows &&
-          stashes.map((stash) => (
-            <GitGraphStashRow
-              key={stash.oid}
-              stash={stash}
-              busy={actionBusy}
-              onApply={() => onApplyStash(stash.index)}
-            />
-          ))}
-        {status === 'loading' && !result && (
+        )
+      case 'stash':
+        return (
+          <GitGraphStashRow
+            stash={entry.stash}
+            busy={actionBusy}
+            onApply={() => onApplyStash(entry.stash.index)}
+          />
+        )
+      case 'loading':
+        return (
           <div className="p-4 text-xs text-muted-foreground">
             {translate('auto.components.git.graph.pane.loading', 'Loading graph...')}
           </div>
-        )}
-        {status === 'error' && !result && (
-          <div className="p-4 text-xs text-destructive">{error}</div>
-        )}
-        {result &&
-          result.items.length === 0 &&
-          !hasWorkingTreeChanges &&
-          !statusReadError &&
-          (!showStashRows || stashes.length === 0) && (
-            <div className="p-4 text-xs text-muted-foreground">
-              {translate('auto.components.git.graph.pane.empty', 'No commits found.')}
-            </div>
-          )}
-        {viewModels.map((viewModel) => (
-          <ContextMenu key={viewModel.historyItem.id}>
+        )
+      case 'error':
+        return <div className="p-4 text-xs text-destructive">{entry.message}</div>
+      case 'empty':
+        return (
+          <div className="p-4 text-xs text-muted-foreground">
+            {translate('auto.components.git.graph.pane.empty', 'No commits found.')}
+          </div>
+        )
+      case 'row':
+        return (
+          <ContextMenu>
             <ContextMenuTrigger asChild>
-              <div>
+              <div data-git-graph-model-index={entry.modelIndex}>
                 <GitGraphRow
-                  viewModel={viewModel}
+                  viewModel={entry.viewModel}
                   worktreeHeads={worktreeHeads}
                   actionContextHeadId={actionContextHeadId}
                   viewSettings={previewSettings}
-                  selected={selectedIds.includes(viewModel.historyItem.id)}
+                  selected={selectedIds.includes(entry.viewModel.historyItem.id)}
                   activeRefFilter={activeRefFilter}
                   onSelect={onSelect}
                   onToggleRefFilter={onToggleRefFilter}
                 />
               </div>
             </ContextMenuTrigger>
-            <GitGraphActionMenu item={viewModel.historyItem} handlers={menuHandlers} />
+            <GitGraphActionMenu item={entry.viewModel.historyItem} handlers={menuHandlers} />
           </ContextMenu>
-        ))}
-        {result?.hasMore && (
+        )
+      case 'load-more':
+        return (
           <div className="p-2">
             <Button
               type="button"
@@ -304,10 +340,46 @@ export function GitGraphTable({
               {translate('auto.components.git.graph.pane.loadMore', 'Load more commits')}
             </Button>
           </div>
-        )}
-        {status === 'error' && result && (
-          <div className="p-2 text-[11px] text-destructive">{error}</div>
-        )}
+        )
+      case 'trailing-error':
+        return <div className="p-2 text-[11px] text-destructive">{entry.message}</div>
+    }
+  }
+
+  return (
+    <div
+      ref={setTableNode}
+      className="flex min-h-0 flex-1 flex-col"
+      onKeyDown={handleRowNavigation}
+    >
+      <GitGraphTableHeader
+        settings={previewSettings}
+        onStartResize={startResize}
+        onMoveResize={moveResize}
+        onFinishResize={finishResize}
+        onCancelResize={() => setResize(null)}
+        onResizeWithKeyboard={resizeWithKeyboard}
+      />
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto scrollbar-sleek">
+        <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const entry = entries[virtualRow.index]
+            if (!entry) {
+              return null
+            }
+            return (
+              <div
+                key={virtualRow.key}
+                data-index={virtualRow.index}
+                ref={virtualizer.measureElement}
+                className="absolute left-0 top-0 w-full"
+                style={{ transform: `translateY(${virtualRow.start}px)` }}
+              >
+                {renderEntry(entry)}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

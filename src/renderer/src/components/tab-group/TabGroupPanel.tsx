@@ -14,6 +14,7 @@ import { getTabPaneBodyDroppableId, type HoveredTabInsertion } from './useTabDra
 import { tabGroupBodyAnchorName } from './tab-group-body-anchor'
 import { registerTabGroupBody } from './tab-group-body-geometry'
 import { observeTabGroupBodyGridSize } from '@/runtime/sync-runtime-graph'
+import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type { TabGroup } from '../../../../shared/tab-types'
 import type { ClientHostedBrowserRow } from '../../../../shared/client-hosted-browser-rows'
@@ -342,11 +343,22 @@ export default function TabGroupPanel({
           />
         ) : null}
         {activeTab?.contentType === 'git-graph' && isWebClientLocation() && (
-          <div className="absolute inset-0 flex items-center justify-center p-6 text-sm text-muted-foreground">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-sm text-muted-foreground">
             {translate(
               'auto.components.tab.group.TabGroupPanel.gitGraphDesktopOnly',
               'Git Graph is available in the desktop app.'
             )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => commands.closeItem(activeTab.id)}
+            >
+              {translate(
+                'auto.components.tab.group.TabGroupPanel.closeGitGraph',
+                'Close Git Graph'
+              )}
+            </Button>
           </div>
         )}
         {activeTab?.contentType === 'git-graph' && !isWebClientLocation() && (

@@ -4,6 +4,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { GIT_GRAPH_VIEW_SETTINGS_STORAGE_KEY } from './git-graph-view-settings'
 
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 32,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        key: `row-${index}`,
+        start: index * 32
+      })),
+    measureElement: vi.fn(),
+    scrollToIndex: vi.fn()
+  })
+}))
+
 const mocks = vi.hoisted(() => ({
   history: vi.fn(),
   auxRefs: vi.fn(),
