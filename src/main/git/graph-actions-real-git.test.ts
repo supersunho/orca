@@ -78,12 +78,12 @@ describe('runGitGraphAction real git', () => {
     expect(stash).toEqual({ ok: true })
     expect(git(repo, ['status', '--porcelain'])).toBe('')
 
-    const popped = await runGitGraphAction(repo, {
-      kind: 'stashPop',
+    const applied = await runGitGraphAction(repo, {
+      kind: 'stashApply',
       index: 0,
       reinstateIndex: true
     })
-    expect(popped).toEqual({ ok: true })
+    expect(applied).toEqual({ ok: true })
     expect(await readFile(path.join(repo, 'tracked.txt'), 'utf8')).toBe('changed\n')
     expect(await readFile(path.join(repo, 'untracked.txt'), 'utf8')).toBe('new\n')
     git(repo, ['add', '.'])

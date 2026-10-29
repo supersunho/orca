@@ -12,12 +12,20 @@ function execOptions(worktreePath: string, options: GitRuntimeOptions): Worktree
 
 function parseStashes(stdout: string): GitGraphStash[] {
   return stdout.split(/\r?\n/).flatMap((line) => {
-    const [selector, oid, message] = line.split('\0')
+    const [selector, oid, message, createdAt] = line.split('\0')
     const match = selector?.match(/^stash@\{(\d+)\}$/)
     if (!match || !oid) {
       return []
     }
-    return [{ index: Number(match[1]), oid, message: message ?? '' }]
+    const timestamp = Number(createdAt)
+    return [
+      {
+        index: Number(match[1]),
+        oid,
+        message: message ?? '',
+        createdAt: Number.isFinite(timestamp) ? timestamp * 1000 : 0
+      }
+    ]
   })
 }
 
@@ -27,7 +35,7 @@ export async function listGraphAuxRefs(
 ): Promise<GitGraphAuxRefs> {
   const exec = execOptions(worktreePath, options)
   const [stashResult, backupResult] = await Promise.allSettled([
-    gitExecFileAsync(['stash', 'list', '--format=%gd%x00%H%x00%gs'], exec),
+    gitExecFileAsync(['stash', 'list', '--format=%gd%x00%H%x00%gs%x00%ct'], exec),
     gitExecFileAsync(
       [
         'for-each-ref',

@@ -25,7 +25,6 @@ export function GitGraphAuxRefsDialog({
   onClose: () => void
   onAction: (action: GitGraphAction) => void
 }): React.JSX.Element {
-  const [confirmDrop, setConfirmDrop] = useState<number | null>(null)
   const [confirmRestore, setConfirmRestore] = useState<string | null>(null)
 
   return (
@@ -41,7 +40,7 @@ export function GitGraphAuxRefsDialog({
             {mode === 'stashes'
               ? translate(
                   'auto.components.git.graph.aux.stashesDescription',
-                  'Apply, pop, or drop a stash in this worktree.'
+                  'Apply a stash in this worktree.'
                 )
               : translate(
                   'auto.components.git.graph.aux.backupsDescription',
@@ -59,7 +58,7 @@ export function GitGraphAuxRefsDialog({
           {mode === 'stashes' &&
             refs.stashes.map((stash) => (
               <div
-                key={stash.index}
+                key={stash.oid}
                 className="flex items-center gap-2 border-b border-border/50 px-2 py-1.5 text-xs last:border-b-0"
               >
                 <span className="w-10 shrink-0 font-mono text-[10px] text-muted-foreground">
@@ -74,39 +73,14 @@ export function GitGraphAuxRefsDialog({
                   variant="outline"
                   disabled={busy}
                   onClick={() =>
-                    onAction({ kind: 'stashApply', index: stash.index, reinstateIndex: false })
+                    onAction({
+                      kind: 'stashApply',
+                      index: stash.index,
+                      reinstateIndex: false
+                    })
                   }
                 >
                   {translate('auto.components.git.graph.aux.apply', 'Apply')}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() =>
-                    onAction({ kind: 'stashPop', index: stash.index, reinstateIndex: false })
-                  }
-                >
-                  {translate('auto.components.git.graph.aux.pop', 'Pop')}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={confirmDrop === stash.index ? 'destructive' : 'outline'}
-                  disabled={busy}
-                  onClick={() => {
-                    if (confirmDrop === stash.index) {
-                      setConfirmDrop(null)
-                      onAction({ kind: 'stashDrop', index: stash.index })
-                    } else {
-                      setConfirmDrop(stash.index)
-                    }
-                  }}
-                >
-                  {confirmDrop === stash.index
-                    ? translate('auto.components.git.graph.aux.confirmDrop', 'Confirm drop')
-                    : translate('auto.components.git.graph.aux.drop', 'Drop')}
                 </Button>
               </div>
             ))}

@@ -16,8 +16,12 @@ describe('listGraphAuxRefs', () => {
       if (args[0] === 'stash') {
         return {
           stdout:
-            'stash@{0}\0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\0WIP on main: base\n' +
-            'stash@{1}\0bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\0WIP on main: older\n',
+            'stash@{0}\0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\0WIP on main: base' +
+            '\0' +
+            '1700000000\n' +
+            'stash@{1}\0bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\0WIP on main: older' +
+            '\0' +
+            '1699999999\n',
           stderr: ''
         }
       }
@@ -40,12 +44,14 @@ describe('listGraphAuxRefs', () => {
       {
         index: 0,
         oid: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        message: 'WIP on main: base'
+        message: 'WIP on main: base',
+        createdAt: 1_700_000_000_000
       },
       {
         index: 1,
         oid: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-        message: 'WIP on main: older'
+        message: 'WIP on main: older',
+        createdAt: 1_699_999_999_000
       }
     ])
     expect(refs.backups).toEqual([

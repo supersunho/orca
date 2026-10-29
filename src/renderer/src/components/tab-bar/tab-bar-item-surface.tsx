@@ -2,11 +2,8 @@ import React from 'react'
 import { canToggleNativeChat } from '../../../../shared/native-chat-availability'
 import { resolveNativeChatTabAgentEvidence } from './native-chat-tab-agent-evidence'
 import type { DropIndicator } from './drop-indicator'
-import {
-  resolveEditorTabGitStatus,
-  resolveTerminalItemTab,
-  type TabBarItem
-} from './tab-bar-item-model'
+import { resolveEditorTabGitStatus, resolveTerminalItemTab } from './tab-bar-item-model'
+import type { TabBarItem } from './tab-bar-item-kind'
 import type { TabBarProps } from './tab-bar-props'
 import type { TabBarRuntimeModel } from './use-tab-bar-runtime-model'
 import type { TabBarItemActions } from './use-tab-bar-item-actions'

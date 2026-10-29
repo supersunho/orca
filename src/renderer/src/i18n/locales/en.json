@@ -17701,7 +17701,9 @@
             "drop": "Drop",
             "noBackups": "No backups.",
             "confirmRestore": "Confirm restore",
-            "restore": "Restore"
+            "restore": "Restore",
+            "uncommittedChanges": "Uncommitted changes ({{value0}})",
+            "stashPrefix": "stash@"
           },
           "remote": {
             "title": "Remotes",

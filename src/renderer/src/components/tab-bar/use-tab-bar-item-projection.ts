@@ -7,9 +7,9 @@ import {
   buildOrderedTabItems,
   buildTabDropIndicators,
   buildTabStripLayoutKey,
-  findActiveVisibleTabId,
-  type TabBarItem
+  findActiveVisibleTabId
 } from './tab-bar-item-model'
+import type { TabBarItem } from './tab-bar-item-kind'
 import type { DropIndicator } from './drop-indicator'
 import { sameStringArray } from '@/runtime/web-session-tabs-sync/state-equality-core'
 

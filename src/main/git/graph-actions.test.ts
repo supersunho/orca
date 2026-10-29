@@ -190,16 +190,6 @@ describe('runGitGraphAction argv', () => {
       expected: [['stash', 'apply', '--index', 'stash@{2}']]
     },
     {
-      name: 'stashPop',
-      action: { kind: 'stashPop', index: 0, reinstateIndex: false },
-      expected: [['stash', 'pop', 'stash@{0}']]
-    },
-    {
-      name: 'stashDrop',
-      action: { kind: 'stashDrop', index: 1 },
-      expected: [['stash', 'drop', 'stash@{1}']]
-    },
-    {
       name: 'merge with no-ff',
       action: {
         kind: 'merge',
@@ -699,6 +689,19 @@ describe('runGitGraphAction failure mapping', () => {
     })
 
     expect(result).toMatchObject({ ok: false, code: 'conflict', conflict: 'cherry-pick' })
+  })
+
+  it('refuses destructive stash actions without an atomic Git primitive', async () => {
+    installGitHandler(() => ok())
+
+    for (const action of [
+      { kind: 'stashPop' as const, index: 0, reinstateIndex: false },
+      { kind: 'stashDrop' as const, index: 0 }
+    ]) {
+      const result = await runGitGraphAction(worktree, action)
+      expect(result).toMatchObject({ ok: false, code: 'preflight' })
+    }
+    expect(calls.some((args) => args[0] === 'stash')).toBe(false)
   })
 
   it('maps a stash conflict without inventing an operation', async () => {

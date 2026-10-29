@@ -1,4 +1,4 @@
-import type { TabBarItem } from './tab-bar-item-model'
+import type { TabBarItem } from './tab-bar-item-kind'
 import { resolveTerminalTabTitle } from '../../../../shared/tab-title-resolution'
 import { getEditorDisplayLabel } from '@/components/editor/editor-labels'
 import { getBrowserTabLabel } from './BrowserTab'

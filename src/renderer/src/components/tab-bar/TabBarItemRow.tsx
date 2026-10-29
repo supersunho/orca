@@ -10,7 +10,8 @@ import EditorFileTab from './EditorFileTab'
 import BrowserTab from './BrowserTab'
 import type { DropIndicator } from './drop-indicator'
 import type { TabDragItemData } from '../tab-group/useTabDragSplit'
-import { getTabDragLabel, resolveTerminalItemTab, type TabBarItem } from './tab-bar-item-model'
+import { getTabDragLabel, resolveTerminalItemTab } from './tab-bar-item-model'
+import type { TabBarItem } from './tab-bar-item-kind'
 import type { TabBarItemActions } from './use-tab-bar-item-actions'
 import {
   useStructuredChatTabConversationName,

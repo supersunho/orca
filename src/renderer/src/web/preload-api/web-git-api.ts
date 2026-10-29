@@ -1,48 +1,16 @@
-/* eslint-disable max-lines -- Why: the web git shim mirrors the desktop API in one transport surface. */
 import { pickGitHistoryOptions } from '../../../../shared/git-history'
 import type { GitGraphActionResult, GitGraphAuxRefs } from '../../../../shared/git-graph-actions'
 import type { PreloadApi } from '../../../../preload/api-types'
-import { callAbortableRuntimeEnvironment } from '../../runtime/abortable-runtime-environment-call'
 import { toRuntimeWorktreeSelector } from '../../runtime/runtime-worktree-selector'
 import { translate } from '@/i18n/i18n'
 import { callRuntimeResult } from './web-runtime-calls'
 import { mutateGitPath, mutateGitPaths } from './web-git-mutations'
 import { requireGitStageWorktreeScopeReceipt } from '../../../../shared/git-stage-worktree-scope'
-import { requireActiveEnvironment, updateEnvironmentFromResponse } from './web-runtime-session'
 import {
   resolveRuntimeFilePath,
   resolveRuntimeWorktreeByPath
 } from './web-runtime-worktree-catalog'
-
-export const webGitStatusAbortControllers = new Map<string, AbortController>()
-
-export async function callAbortableRuntimeStatus<TResult>(
-  requestToken: string,
-  params: unknown
-): Promise<TResult> {
-  const environment = requireActiveEnvironment()
-  webGitStatusAbortControllers.get(requestToken)?.abort()
-  const controller = new AbortController()
-  webGitStatusAbortControllers.set(requestToken, controller)
-  try {
-    const response = await callAbortableRuntimeEnvironment(
-      environment.id,
-      'git.status',
-      params,
-      undefined,
-      controller.signal
-    )
-    updateEnvironmentFromResponse(environment, response)
-    if (!response.ok) {
-      throw new Error(response.error.message)
-    }
-    return response.result as TResult
-  } finally {
-    if (webGitStatusAbortControllers.get(requestToken) === controller) {
-      webGitStatusAbortControllers.delete(requestToken)
-    }
-  }
-}
+import { callAbortableRuntimeStatus, webGitStatusAbortControllers } from './web-git-status-abort'
 
 export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
   return {

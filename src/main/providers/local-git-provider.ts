@@ -3,7 +3,7 @@ import type { GitRuntimeOptions } from '../git/git-runtime-options'
 import { checkIgnoredPaths } from '../git/check-ignored-paths'
 import { checkoutBranch, listLocalBranches } from '../git/checkout'
 import { getHistory } from '../git/history'
-import { runGitGraphAction } from '../git/graph-actions'
+import { runGitGraphActionWithStashLock } from '../git/graph-action-lock'
 import { listGraphAuxRefs } from '../git/graph-aux-refs'
 import { gitFastForward, gitFetch, gitPull, gitPullRebaseFromBase, gitPush } from '../git/remote'
 import { getRemoteCommitUrl, getRemoteFileUrl, isGitRepo } from '../git/repo'
@@ -110,7 +110,7 @@ export function createLocalGitProvider(options: LocalGitProviderOptions = {}): L
     getCommitRangeCompare: (worktreePath, baseOid, headOid) =>
       getCommitRangeCompare(worktreePath, baseOid, headOid, interactive),
     runGitGraphAction: (worktreePath, action) =>
-      runGitGraphAction(worktreePath, action, interactive),
+      runGitGraphActionWithStashLock(worktreePath, action, interactive),
     listGraphAuxRefs: (worktreePath) => listGraphAuxRefs(worktreePath, interactive),
     getUpstreamStatus: (worktreePath, pushTarget) =>
       getUpstreamStatus(worktreePath, pushTarget, base),

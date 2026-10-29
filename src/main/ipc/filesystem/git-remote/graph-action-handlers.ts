@@ -4,7 +4,7 @@ import type {
   GitGraphActionResult,
   GitGraphAuxRefs
 } from '../../../../shared/git-graph-actions'
-import { runGitGraphAction } from '../../../git/graph-actions'
+import { runGitGraphActionWithStashLock } from '../../../git/graph-action-lock'
 import { listGraphAuxRefs } from '../../../git/graph-aux-refs'
 import { assertWslUncPathRunning } from '../../../wsl/wsl-unc-access-gate'
 import { requireReachableGitRoute } from '../../../providers/execution-host-provider-dispatch'
@@ -32,7 +32,7 @@ export function registerGitGraphActionHandlers(context: FilesystemHandlerContext
         worktreePath
       )
       await assertWslUncPathRunning(worktreePath, gitOptions.wslDistro)
-      return runGitGraphAction(worktreePath, args.action, gitOptions)
+      return runGitGraphActionWithStashLock(worktreePath, args.action, gitOptions)
     }
   )
 

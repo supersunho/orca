@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { clearClientHostedBrowserRowSelection } from '@/lib/pane-manager/client-hosted-browser-row-state'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/layout-owner-switch'
-import type { TabBarItem } from './tab-bar-item-model'
+import type { TabBarItem } from './tab-bar-item-kind'
 import type { TabBarProps } from './tab-bar-props'
 import { withLayoutOwnerTabProps } from './tab-bar-layout-owner-props'
 

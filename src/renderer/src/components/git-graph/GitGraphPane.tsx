@@ -1,56 +1,37 @@
-/* eslint-disable max-lines -- Why: the pane keeps query, selection, action, and dialog orchestration together so cross-surface invariants stay visible; presentation lives in extracted components. */
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useWorktreeById } from '@/store/selectors'
-import { getConnectionId } from '@/lib/connection-context'
-import {
-  requireGitOwnerTarget,
-  useWorktreeGitOwnerTarget
-} from '../right-sidebar/worktree-git-owner-target'
-import { getRuntimeGitStatus } from '@/runtime/runtime-git-status-client'
-import { getRuntimeGitCommitRangeCompare } from '@/runtime/runtime-git-diff-client'
-import { fetchRuntimeGit, pullRuntimeGit, pushRuntimeGit } from '@/runtime/runtime-git-sync-client'
-import { toast } from 'sonner'
-import { detectLanguage } from '@/lib/language-detect'
+import { selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import { useWorktreeGitOwnerTarget } from '../right-sidebar/worktree-git-owner-target'
 import { useGitHistoryCommitActions } from '../right-sidebar/source-control/sync/use-git-history-commit-actions'
-import {
-  buildDefaultGitHistoryColorMap,
-  buildGitHistoryViewModels
-} from '../../../../shared/git-history-graph'
 import type { GitHistoryItem, GitHistoryItemRef } from '../../../../shared/git-history'
-import type { GitBranchChangeEntry } from '../../../../shared/git-diff-compare-types'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
-import type { ConflictReviewEntry } from '../../../../shared/editor-tab-view-types'
 import type { GitGraphAction } from '../../../../shared/git-graph-actions'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
 import { GitGraphRow } from './GitGraphRow'
+import { GitGraphStashRow, GitGraphUncommittedRow } from './GitGraphAuxRows'
 import { GitGraphActionMenu } from './GitGraphActionMenu'
 import { GitGraphActionDialog, type GitGraphDialogRequest } from './GitGraphActionDialog'
 import { GitGraphAuxRefsDialog } from './GitGraphAuxRefsDialog'
 import { GitGraphRemoteDialog } from './GitGraphRemoteDialog'
+import { GitGraphSyncDialog } from './GitGraphSyncDialog'
 import { GitGraphConflictBanner } from './GitGraphConflictBanner'
-import { GitGraphDetailsPanel, type GitGraphRangeCompareState } from './GitGraphDetailsPanel'
+import { GitGraphDetailsPanel } from './GitGraphDetailsPanel'
 import { GitGraphToolbar } from './GitGraphToolbar'
 import { useGitGraphActions } from './useGitGraphActions'
 import { useGitGraphAuxRefs } from './useGitGraphAuxRefs'
 import { useGitGraphHistory } from './useGitGraphHistory'
+import { useGitGraphWorktreeStatus } from './useGitGraphWorktreeStatus'
+import { useGitGraphCommitSelection } from './useGitGraphCommitSelection'
+import { useGitGraphViewModels } from './useGitGraphViewModels'
+import { useGitGraphRangeActions } from './useGitGraphRangeActions'
+import { useGitGraphMenuHandlers } from './useGitGraphMenuHandlers'
+import { useGitGraphSync } from './useGitGraphSync'
 
 function shortRefName(ref: string): string {
   return ref.replace(/^refs\/(?:heads|remotes|tags)\//, '')
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 export default function GitGraphPane({
@@ -62,7 +43,7 @@ export default function GitGraphPane({
 }): React.JSX.Element {
   const worktree = useWorktreeById(worktreeId, executionHostId)
   const ownerTarget = useWorktreeGitOwnerTarget(worktreeId)
-  const worktreesByRepo = useAppStore((state) => state.worktreesByRepo)
+  const worktreesByRepo = useAppStore(selectWorktreesByRepo)
   const worktrees = useMemo(() => Object.values(worktreesByRepo ?? {}).flat(), [worktreesByRepo])
   const {
     result,
@@ -86,17 +67,10 @@ export default function GitGraphPane({
     refreshKey: result
   })
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [files, setFiles] = useState<GitBranchChangeEntry[]>([])
-  const [filesStatus, setFilesStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
-  const [filesError, setFilesError] = useState<string | null>(null)
-  const [rangeCompare, setRangeCompare] = useState<GitGraphRangeCompareState | null>(null)
   const [dialogRequest, setDialogRequest] = useState<GitGraphDialogRequest | null>(null)
   const [auxDialog, setAuxDialog] = useState<'stashes' | 'backups' | null>(null)
   const [remoteOpen, setRemoteOpen] = useState(false)
-  const [syncBusy, setSyncBusy] = useState(false)
   const [pendingSync, setPendingSync] = useState<'pull' | 'push' | null>(null)
-  const [hasWorkingTreeChanges, setHasWorkingTreeChanges] = useState(false)
-  const [conflictEntries, setConflictEntries] = useState<ConflictReviewEntry[]>([])
   const openCommitDiff = useAppStore((state) => state.openCommitDiff)
   const openCommitAllDiffs = useAppStore((state) => state.openCommitAllDiffs)
   const openConflictReview = useAppStore((state) => state.openConflictReview)
@@ -123,201 +97,26 @@ export default function GitGraphPane({
     }
   })
 
-  useEffect(() => {
-    if (!conflict || !worktree?.path || !ownerTarget) {
-      setConflictEntries([])
-      return
-    }
-    let cancelled = false
-    void getRuntimeGitStatus(
-      {
-        target: requireGitOwnerTarget(ownerTarget),
-        worktreeId,
-        worktreePath: worktree.path,
-        connectionId: getConnectionId(worktreeId) ?? undefined
-      },
-      { admissionTier: 'background' }
-    )
-      .then((next) => {
-        if (!cancelled) {
-          setConflictEntries(
-            next.entries.flatMap((entry) =>
-              entry.conflictKind ? [{ path: entry.path, conflictKind: entry.conflictKind }] : []
-            )
-          )
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setConflictEntries([])
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [conflict, worktree?.path, ownerTarget, worktreeId])
-
-  useEffect(() => {
-    if (!worktree?.path || !ownerTarget) {
-      setHasWorkingTreeChanges(false)
-      return
-    }
-    let cancelled = false
-    void getRuntimeGitStatus(
-      {
-        target: requireGitOwnerTarget(ownerTarget),
-        worktreeId,
-        worktreePath: worktree.path,
-        connectionId: getConnectionId(worktreeId) ?? undefined
-      },
-      { admissionTier: 'background' }
-    )
-      .then((next) => {
-        if (!cancelled) {
-          setHasWorkingTreeChanges(next.entries.length > 0 || (next.statusLength ?? 0) > 0)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHasWorkingTreeChanges(false)
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [worktree?.path, ownerTarget, worktreeId, result])
-
-  const singleSelected =
-    selectedIds.length === 1
-      ? (result?.items.find((item) => item.id === selectedIds[0]) ?? null)
-      : null
-
-  useEffect(() => {
-    if (!singleSelected) {
-      setFiles([])
-      setFilesStatus('idle')
-      setFilesError(null)
-      return
-    }
-    let cancelled = false
-    setFilesStatus('loading')
-    setFilesError(null)
-    void loadCommitFiles(singleSelected)
-      .then((entries) => {
-        if (!cancelled) {
-          setFiles(entries)
-          setFilesStatus('ready')
-        }
-      })
-      .catch((nextError: unknown) => {
-        if (!cancelled) {
-          setFilesStatus('error')
-          setFilesError(errorMessage(nextError))
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [loadCommitFiles, singleSelected])
-
-  useEffect(() => {
-    if (selectedIds.length !== 2 || !worktree?.path || !ownerTarget) {
-      setRangeCompare(null)
-      return
-    }
-    const base = result?.items.find((item) => item.id === selectedIds[0])
-    const head = result?.items.find((item) => item.id === selectedIds[1])
-    if (!base || !head) {
-      setRangeCompare(null)
-      return
-    }
-    let cancelled = false
-    setRangeCompare({
-      base,
-      head,
-      result: {
-        summary: { baseOid: base.id, headOid: head.id, changedFiles: 0, status: 'ready' },
-        entries: []
-      },
-      status: 'loading'
+  const { worktreeStatus, conflictEntries, hasWorkingTreeChanges, workingTreeChangeCount } =
+    useGitGraphWorktreeStatus({
+      worktreeId,
+      worktreePath: worktree?.path ?? null,
+      ownerTarget,
+      refreshKey: result,
+      conflict
     })
-    void getRuntimeGitCommitRangeCompare(
-      {
-        target: requireGitOwnerTarget(ownerTarget),
-        worktreeId,
-        worktreePath: worktree.path,
-        connectionId: getConnectionId(worktreeId) ?? undefined
-      },
-      base.id,
-      head.id
-    )
-      .then((next) => {
-        if (!cancelled) {
-          setRangeCompare({
-            base,
-            head,
-            result: next,
-            status: next.summary.status === 'ready' ? 'ready' : 'error'
-          })
-        }
-      })
-      .catch((nextError: unknown) => {
-        if (!cancelled) {
-          setRangeCompare({
-            base,
-            head,
-            result: {
-              summary: {
-                baseOid: base.id,
-                headOid: head.id,
-                changedFiles: 0,
-                status: 'error',
-                errorMessage: errorMessage(nextError)
-              },
-              entries: []
-            },
-            status: 'error'
-          })
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [selectedIds, result, worktree?.path, ownerTarget, worktreeId])
 
-  const worktreeHeads = useMemo(() => {
-    const heads = new Map<string, string[]>()
-    for (const candidate of worktrees) {
-      if (!candidate.head) {
-        continue
-      }
-      const label = candidate.branch || candidate.path
-      const existing = heads.get(candidate.head)
-      if (existing) {
-        existing.push(label)
-      } else {
-        heads.set(candidate.head, [label])
-      }
-    }
-    return heads
-  }, [worktrees])
+  const { singleSelected, files, filesStatus, filesError, rangeCompare } =
+    useGitGraphCommitSelection({
+      selectedIds,
+      result,
+      loadCommitFiles,
+      worktreeId,
+      worktreePath: worktree?.path ?? null,
+      ownerTarget
+    })
 
-  const viewModels = useMemo(
-    () =>
-      result
-        ? buildGitHistoryViewModels(
-            result.items,
-            buildDefaultGitHistoryColorMap(result),
-            result.currentRef,
-            result.remoteRef,
-            result.baseRef,
-            false,
-            false,
-            result.mergeBase
-          )
-        : [],
-    [result]
-  )
+  const { worktreeHeads, viewModels } = useGitGraphViewModels({ worktrees, result })
 
   const toggleRefFilter = useCallback(
     (ref: GitHistoryItemRef) => {
@@ -343,158 +142,38 @@ export default function GitGraphPane({
     })
   }, [])
 
-  const openRangeFile = useCallback(
-    (entry: GitBranchChangeEntry) => {
-      if (!rangeCompare || !worktree?.path) {
-        return
-      }
-      openCommitDiff(
-        worktreeId,
-        worktree.path,
-        entry,
-        {
-          commitOid: rangeCompare.head.id,
-          parentOid: rangeCompare.base.id,
-          compareRef: rangeCompare.head.id.slice(0, 7),
-          baseRef: rangeCompare.base.id.slice(0, 7)
-        },
-        detectLanguage(entry.path)
-      )
-    },
-    [openCommitDiff, rangeCompare, worktree?.path, worktreeId]
-  )
+  const { openRangeFile, openRangeDiff } = useGitGraphRangeActions({
+    rangeCompare,
+    worktreeId,
+    worktreePath: worktree?.path ?? null,
+    openCommitDiff,
+    openCommitAllDiffs
+  })
 
-  const openRangeDiff = useCallback(() => {
-    if (!rangeCompare || !worktree?.path) {
-      return
-    }
-    const baseRef = rangeCompare.base.id.slice(0, 7)
-    const compareRef = rangeCompare.head.id.slice(0, 7)
-    openCommitAllDiffs(
-      worktreeId,
-      worktree.path,
-      {
-        commitOid: rangeCompare.head.id,
-        parentOid: rangeCompare.base.id,
-        compareRef,
-        baseRef,
-        changedFiles: rangeCompare.result.entries.length,
-        status: 'ready'
-      },
-      rangeCompare.result.entries,
-      `${baseRef}..${compareRef}`
-    )
-  }, [openCommitAllDiffs, rangeCompare, worktree?.path, worktreeId])
+  const menuHandlers = useGitGraphMenuHandlers({ runAction, setDialogRequest, setSelectedIds })
 
-  const menuHandlers = {
-    onCheckoutRef: (ref: string) => void runAction({ kind: 'checkout', branch: ref }),
-    onCreateBranch: (startPoint: string) =>
-      setDialogRequest({ kind: 'createBranch', startPoint, name: '', checkout: true }),
-    onRenameBranch: (name: string) => setDialogRequest({ kind: 'renameBranch', name }),
-    onDeleteBranch: (name: string) =>
-      setDialogRequest({ kind: 'deleteBranch', name, force: false }),
-    onMerge: (target: string) =>
-      setDialogRequest({
-        kind: 'merge',
-        target,
-        noFastForward: true,
-        squash: false,
-        noCommit: false
-      }),
-    onRebase: (target: string) =>
-      setDialogRequest({ kind: 'rebase', onto: target, ignoreDate: true }),
-    onCherryPick: (commit: string) =>
-      setDialogRequest({
-        kind: 'confirm',
-        title: translate('auto.components.git.graph.menu.cherryPick', 'Cherry-pick commit'),
-        description: commit.slice(0, 7),
-        action: { kind: 'cherryPick', commit, noCommit: false, recordOrigin: false }
-      }),
-    onRevert: (commit: string) =>
-      setDialogRequest({
-        kind: 'confirm',
-        title: translate('auto.components.git.graph.menu.revert', 'Revert commit'),
-        description: commit.slice(0, 7),
-        action: { kind: 'revert', commit }
-      }),
-    onDropCommit: (commit: string) =>
-      setDialogRequest({
-        kind: 'confirm',
-        title: translate('auto.components.git.graph.menu.dropCommit', 'Drop commit'),
-        description: translate(
-          'auto.components.git.graph.dialog.dropCommitDescription',
-          'Remove this commit from the current branch. A backup ref is created first.'
-        ),
-        action: { kind: 'dropCommit', commit }
-      }),
-    onReset: (commit: string) => setDialogRequest({ kind: 'reset', target: commit, mode: 'mixed' }),
-    onCreateTag: (target: string) =>
-      setDialogRequest({ kind: 'createTag', target, name: '', message: '', push: false }),
-    onDeleteTag: (name: string) =>
-      setDialogRequest({
-        kind: 'confirm',
-        title: translate('auto.components.git.graph.menu.deleteTag', 'Delete tag {{value0}}', {
-          value0: name
-        }),
-        description: translate(
-          'auto.components.git.graph.dialog.deleteTagDescription',
-          'Delete the tag from this repository.'
-        ),
-        action: { kind: 'deleteTag', name }
-      }),
-    onPushTag: (name: string) =>
-      setDialogRequest({
-        kind: 'confirm',
-        title: translate('auto.components.git.graph.menu.pushTag', 'Push tag {{value0}}', {
-          value0: name
-        }),
-        description: translate(
-          'auto.components.git.graph.dialog.pushTagDescription',
-          'Push the tag to the default remote.'
-        ),
-        action: { kind: 'pushTag', name }
-      }),
-    onCompare: (commit: string) =>
-      setSelectedIds((previous) =>
-        previous.length === 1 && previous[0] !== commit ? [previous[0], commit] : [commit]
-      )
-  }
+  const { syncBusy, runSync } = useGitGraphSync({
+    worktreeId,
+    worktreePath: worktree?.path ?? null,
+    ownerTarget,
+    onCompleted: refresh
+  })
 
   const confirmDialog = (action: GitGraphAction): void => {
     setDialogRequest(null)
     void runAction(action)
   }
 
-  const runSync = async (kind: 'fetch' | 'pull' | 'push'): Promise<void> => {
-    if (!worktree?.path || !ownerTarget) {
-      return
-    }
-    setSyncBusy(true)
-    try {
-      const context = {
-        target: requireGitOwnerTarget(ownerTarget),
-        worktreeId,
-        worktreePath: worktree.path,
-        connectionId: getConnectionId(worktreeId) ?? undefined
-      }
-      if (kind === 'fetch') {
-        await fetchRuntimeGit(context)
-      } else if (kind === 'pull') {
-        await pullRuntimeGit(context)
-      } else {
-        await pushRuntimeGit(context)
-      }
-      toast.success(
-        translate('auto.components.git.graph.sync.completed', 'Git {{value0}} completed.', {
-          value0: kind
-        })
-      )
-      refresh()
-    } catch (nextError) {
-      toast.error(nextError instanceof Error ? nextError.message : String(nextError))
-    } finally {
-      setSyncBusy(false)
-    }
+  const requestStash = (): void => {
+    setDialogRequest({
+      kind: 'confirm',
+      title: translate('auto.components.git.graph.sync.stash', 'Stash'),
+      description: translate(
+        'auto.components.git.graph.dialog.stashDescription',
+        'Stash all working tree changes, including untracked files.'
+      ),
+      action: { kind: 'stashCreate', includeUntracked: true }
+    })
   }
 
   const branchLabel =
@@ -524,17 +203,7 @@ export default function GitGraphPane({
         onStashes={() => setAuxDialog('stashes')}
         onBackups={() => setAuxDialog('backups')}
         onRemotes={() => setRemoteOpen(true)}
-        onStash={() =>
-          setDialogRequest({
-            kind: 'confirm',
-            title: translate('auto.components.git.graph.sync.stash', 'Stash'),
-            description: translate(
-              'auto.components.git.graph.dialog.stashDescription',
-              'Stash all working tree changes, including untracked files.'
-            ),
-            action: { kind: 'stashCreate', includeUntracked: true }
-          })
-        }
+        onStash={requestStash}
       />
 
       {refFilter.length > 0 && (
@@ -596,6 +265,27 @@ export default function GitGraphPane({
             <span>{translate('auto.components.git.graph.pane.commit', 'Commit')}</span>
           </div>
           <div className="min-h-0 flex-1 overflow-auto scrollbar-sleek">
+            {worktreeStatus && hasWorkingTreeChanges && (
+              <GitGraphUncommittedRow
+                changeCount={workingTreeChangeCount}
+                busy={actionBusy}
+                onStash={requestStash}
+              />
+            )}
+            {auxRefs.stashes.map((stash) => (
+              <GitGraphStashRow
+                key={stash.oid}
+                stash={stash}
+                busy={actionBusy}
+                onApply={() =>
+                  void runAction({
+                    kind: 'stashApply',
+                    index: stash.index,
+                    reinstateIndex: false
+                  })
+                }
+              />
+            ))}
             {status === 'loading' && !result && (
               <div className="p-4 text-xs text-muted-foreground">
                 {translate('auto.components.git.graph.pane.loading', 'Loading graph...')}
@@ -604,11 +294,14 @@ export default function GitGraphPane({
             {status === 'error' && !result && (
               <div className="p-4 text-xs text-destructive">{error}</div>
             )}
-            {result && result.items.length === 0 && (
-              <div className="p-4 text-xs text-muted-foreground">
-                {translate('auto.components.git.graph.pane.empty', 'No commits found.')}
-              </div>
-            )}
+            {result &&
+              result.items.length === 0 &&
+              !hasWorkingTreeChanges &&
+              auxRefs.stashes.length === 0 && (
+                <div className="p-4 text-xs text-muted-foreground">
+                  {translate('auto.components.git.graph.pane.empty', 'No commits found.')}
+                </div>
+              )}
             {viewModels.map((viewModel) => (
               <ContextMenu key={viewModel.historyItem.id}>
                 <ContextMenuTrigger asChild>
@@ -693,43 +386,15 @@ export default function GitGraphPane({
       )}
 
       {pendingSync && (
-        <Dialog open onOpenChange={(open) => !open && setPendingSync(null)}>
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>
-                {pendingSync === 'pull'
-                  ? translate('auto.components.git.graph.sync.pull', 'Pull')
-                  : translate('auto.components.git.graph.sync.push', 'Push')}
-              </DialogTitle>
-              <DialogDescription>
-                {pendingSync === 'pull'
-                  ? translate(
-                      'auto.components.git.graph.sync.pullDescription',
-                      'Pull from the upstream branch into this worktree.'
-                    )
-                  : translate(
-                      'auto.components.git.graph.sync.pushDescription',
-                      'Push this worktree branch to its remote.'
-                    )}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setPendingSync(null)}>
-                {translate('auto.components.git.graph.dialog.cancel', 'Cancel')}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  const kind = pendingSync
-                  setPendingSync(null)
-                  void runSync(kind)
-                }}
-              >
-                {translate('auto.components.git.graph.dialog.confirm', 'Run')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <GitGraphSyncDialog
+          kind={pendingSync}
+          onCancel={() => setPendingSync(null)}
+          onConfirm={() => {
+            const kind = pendingSync
+            setPendingSync(null)
+            void runSync(kind)
+          }}
+        />
       )}
 
       {dialogRequest && (

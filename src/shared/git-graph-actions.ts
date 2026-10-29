@@ -43,6 +43,7 @@ export type GitGraphStash = {
   index: number
   oid: string
   message: string
+  createdAt: number
 }
 
 export type GitGraphBackupRef = {
