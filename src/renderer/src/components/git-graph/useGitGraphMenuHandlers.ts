@@ -11,7 +11,7 @@ export function useGitGraphMenuHandlers({
   setSelectedIds: React.Dispatch<React.SetStateAction<string[]>>
 }): GitGraphActionMenuHandlers {
   return {
-    onCheckoutRef: (ref: string) =>
+    onCheckoutCommit: (ref: string) =>
       setDialogRequest({
         kind: 'confirm',
         title: translate('auto.components.git.graph.menu.checkoutCommit', 'Checkout this commit'),

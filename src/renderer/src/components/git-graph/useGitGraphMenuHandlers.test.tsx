@@ -13,7 +13,7 @@ describe('useGitGraphMenuHandlers checkout', () => {
       })
     )
 
-    result.current.onCheckoutRef('main')
+    result.current.onCheckoutCommit('main')
 
     expect(setDialogRequest).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -133,7 +133,7 @@ const largeViewModels = buildGitHistoryViewModels(largeItems, new Map(), {
 })
 
 const handlers: GitGraphActionMenuHandlers = {
-  onCheckoutRef: () => undefined,
+  onCheckoutCommit: () => undefined,
   onCreateBranch: () => undefined,
   onRenameBranch: () => undefined,
   onDeleteBranch: () => undefined,
@@ -173,6 +173,7 @@ function table(
         viewModels={models}
         worktreeHeads={new Map(headItem ? [[headItem.id, ['main']]] : [])}
         actionContextHeadId={headItem?.id ?? null}
+        currentBranch="main"
         selectedIds={models[1] ? [models[1].historyItem.id] : []}
         activeRefFilter={[]}
         hasWorktreeStatus

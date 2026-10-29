@@ -306,6 +306,7 @@ export default function GitGraphPane({
             viewModels={viewModels}
             worktreeHeads={worktreeHeads}
             actionContextHeadId={worktree?.head ?? null}
+            currentBranch={shortRefName(worktree?.branch ?? '') || null}
             selectedIds={selectedIds}
             activeRefFilter={refFilter}
             hasWorktreeStatus={worktreeStatus !== null}

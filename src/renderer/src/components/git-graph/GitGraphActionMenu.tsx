@@ -8,7 +8,7 @@ import { translate } from '@/i18n/i18n'
 import type { GitHistoryItem, GitHistoryItemRef } from '../../../../shared/git-history'
 
 export type GitGraphActionMenuHandlers = {
-  onCheckoutRef: (ref: string) => void
+  onCheckoutCommit: (ref: string) => void
   onCreateBranch: (startPoint: string) => void
   onRenameBranch: (name: string) => void
   onDeleteBranch: (name: string) => void
@@ -37,10 +37,12 @@ function refsOf(
 
 export function GitGraphActionMenu({
   item,
-  handlers
+  handlers,
+  currentBranch
 }: {
   item: GitHistoryItem
   handlers: GitGraphActionMenuHandlers
+  currentBranch?: string | null
 }): React.JSX.Element {
   const branches = refsOf(item, 'branches')
   const tags = refsOf(item, 'tags')
@@ -49,7 +51,7 @@ export function GitGraphActionMenu({
       <ContextMenuItem onSelect={() => handlers.onCompare(item.id)}>
         {translate('auto.components.git.graph.menu.compare', 'Compare with selected')}
       </ContextMenuItem>
-      <ContextMenuItem onSelect={() => handlers.onCheckoutRef(item.id)}>
+      <ContextMenuItem onSelect={() => handlers.onCheckoutCommit(item.id)}>
         {translate('auto.components.git.graph.menu.checkoutCommit', 'Checkout this commit')}
       </ContextMenuItem>
       <ContextMenuItem onSelect={() => handlers.onCreateBranch(item.id)}>
@@ -84,7 +86,10 @@ export function GitGraphActionMenu({
           <ContextMenuSeparator />
           {branches.map((ref) => (
             <React.Fragment key={ref.id}>
-              <ContextMenuItem onSelect={() => handlers.onCheckoutRef(ref.name)}>
+              <ContextMenuItem
+                disabled={ref.name === currentBranch}
+                onSelect={() => handlers.onCheckoutCommit(ref.name)}
+              >
                 {translate('auto.components.git.graph.menu.checkoutBranch', 'Checkout {{value0}}', {
                   value0: ref.name
                 })}

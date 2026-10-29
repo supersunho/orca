@@ -46,6 +46,7 @@ export function GitGraphTable({
   viewModels,
   worktreeHeads,
   actionContextHeadId,
+  currentBranch,
   selectedIds,
   activeRefFilter,
   hasWorktreeStatus,
@@ -73,6 +74,7 @@ export function GitGraphTable({
   viewModels: readonly GitHistoryItemViewModel[]
   worktreeHeads: ReadonlyMap<string, readonly string[]>
   actionContextHeadId: string | null
+  currentBranch: string | null
   selectedIds: readonly string[]
   activeRefFilter: readonly string[]
   hasWorktreeStatus: boolean
@@ -336,7 +338,11 @@ export function GitGraphTable({
                 />
               </div>
             </ContextMenuTrigger>
-            <GitGraphActionMenu item={entry.viewModel.historyItem} handlers={menuHandlers} />
+            <GitGraphActionMenu
+              item={entry.viewModel.historyItem}
+              handlers={menuHandlers}
+              currentBranch={currentBranch}
+            />
           </ContextMenu>
         )
       case 'load-more':

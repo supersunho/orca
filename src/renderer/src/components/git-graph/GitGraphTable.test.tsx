@@ -51,7 +51,7 @@ const viewModels: GitHistoryItemViewModel[] = items.map((item) => ({
 }))
 
 const handlers: GitGraphActionMenuHandlers = {
-  onCheckoutRef: vi.fn(),
+  onCheckoutCommit: vi.fn(),
   onCreateBranch: vi.fn(),
   onRenameBranch: vi.fn(),
   onDeleteBranch: vi.fn(),
@@ -87,6 +87,7 @@ function renderTable(onClearSelection = vi.fn(), onNavigate = vi.fn()) {
         viewModels={viewModels}
         worktreeHeads={new Map()}
         actionContextHeadId={null}
+        currentBranch={null}
         selectedIds={[]}
         activeRefFilter={[]}
         hasWorktreeStatus
