@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useWorktreeById } from '@/store/selectors'
 import { selectWorktreesByRepo } from '@/store/workspace-record-selectors'
@@ -105,6 +105,7 @@ export default function GitGraphPane({
   })
 
   const {
+    worktreeStatus,
     conflictEntries,
     hasWorkingTreeChanges,
     workingTreeChangeCount,
@@ -140,12 +141,12 @@ export default function GitGraphPane({
     [setRefFilter]
   )
 
+  useEffect(() => {
+    writeGitGraphViewSettings(viewSettings)
+  }, [viewSettings])
+
   const toggleViewSetting = useCallback((key: keyof GitGraphViewSettings) => {
-    setViewSettings((previous) => {
-      const next = { ...previous, [key]: !previous[key] }
-      writeGitGraphViewSettings(next)
-      return next
-    })
+    setViewSettings((previous) => ({ ...previous, [key]: !previous[key] }))
   }, [])
 
   const selectCommit = useCallback((item: GitHistoryItem, event?: React.MouseEvent) => {
@@ -289,6 +290,7 @@ export default function GitGraphPane({
             actionContextHeadId={worktree?.head ?? null}
             selectedIds={selectedIds}
             activeRefFilter={refFilter}
+            hasWorktreeStatus={worktreeStatus !== null}
             hasWorkingTreeChanges={hasWorkingTreeChanges}
             workingTreeChangeCount={workingTreeChangeCount}
             statusCapped={statusCapped}
@@ -303,6 +305,9 @@ export default function GitGraphPane({
             onSelect={selectCommit}
             onToggleRefFilter={toggleRefFilter}
             menuHandlers={menuHandlers}
+            onColumnResize={(key, width) =>
+              setViewSettings((previous) => ({ ...previous, [key]: width }))
+            }
             onLoadMore={() => void loadMore()}
           />
         </div>

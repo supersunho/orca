@@ -17615,7 +17615,9 @@
             "loadingFiles": "Loading files...",
             "noFiles": "No changed files.",
             "statusReadError": "Could not read working tree status: {{value0}}",
-            "folderWorkspace": "Git Graph is only available for Git worktrees."
+            "folderWorkspace": "Git Graph is only available for Git worktrees.",
+            "resizeAuthor": "Resize author column",
+            "resizeDate": "Resize date column"
           },
           "row": {
             "worktreeHead": "Worktree HEAD: {{value0}}",

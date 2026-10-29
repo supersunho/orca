@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
 import type { GitGraphViewSettings } from './git-graph-view-settings'
 
@@ -134,19 +135,26 @@ export function GitGraphToolbar({
         {translate('auto.components.git.graph.remote.title', 'Remotes')}
       </Button>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={translate(
-              'auto.components.git.graph.toolbar.viewSettings',
-              'Git Graph view settings'
-            )}
-          >
-            <SlidersHorizontal />
-          </Button>
-        </DropdownMenuTrigger>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label={translate(
+                  'auto.components.git.graph.toolbar.viewSettings',
+                  'Git Graph view settings'
+                )}
+              >
+                <SlidersHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={4}>
+            {translate('auto.components.git.graph.toolbar.viewSettings', 'Git Graph view settings')}
+          </TooltipContent>
+        </Tooltip>
         <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuLabel>
             {translate('auto.components.git.graph.toolbar.viewSettings', 'Git Graph view settings')}

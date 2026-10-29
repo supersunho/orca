@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  GIT_GRAPH_COMPACT_WIDTH_PX,
   GIT_GRAPH_VIEW_SETTINGS_STORAGE_KEY,
   defaultGitGraphViewSettings,
+  effectiveGitGraphViewSettings,
   gitGraphGridTemplate,
   normalizeGitGraphViewSettings,
   readGitGraphViewSettings,
@@ -32,7 +34,9 @@ describe('git-graph-view-settings', () => {
       showAuthor: false,
       showDate: true,
       relativeDates: false,
-      muteMerges: false
+      muteMerges: false,
+      authorWidth: 132,
+      dateWidth: 96
     })
   })
 
@@ -44,16 +48,39 @@ describe('git-graph-view-settings', () => {
       showAuthor: true,
       showDate: true,
       relativeDates: false,
-      muteMerges: true
+      muteMerges: true,
+      authorWidth: 132,
+      dateWidth: 96
     })
 
     storage.values[GIT_GRAPH_VIEW_SETTINGS_STORAGE_KEY] = '{'
     expect(readGitGraphViewSettings(storage)).toEqual(defaultGitGraphViewSettings())
   })
 
-  it('drops grid columns that are hidden', () => {
+  it('hides author and date columns below the compact breakpoint', () => {
+    const settings = defaultGitGraphViewSettings()
+    expect(effectiveGitGraphViewSettings(settings, GIT_GRAPH_COMPACT_WIDTH_PX - 1)).toEqual({
+      ...settings,
+      showAuthor: false,
+      showDate: false
+    })
+    expect(effectiveGitGraphViewSettings(settings, GIT_GRAPH_COMPACT_WIDTH_PX)).toBe(settings)
+    expect(effectiveGitGraphViewSettings(settings, 0)).toBe(settings)
+  })
+
+  it('clamps persisted widths to their bounds', () => {
+    expect(normalizeGitGraphViewSettings({ authorWidth: 5, dateWidth: 999 })).toMatchObject({
+      authorWidth: 80,
+      dateWidth: 240
+    })
+  })
+
+  it('drops grid columns that are hidden and uses stored widths', () => {
     expect(
       gitGraphGridTemplate({ ...defaultGitGraphViewSettings(), showAuthor: false, showDate: false })
     ).toBe('76px minmax(0,1fr) 76px')
+    expect(
+      gitGraphGridTemplate({ ...defaultGitGraphViewSettings(), authorWidth: 180, dateWidth: 120 })
+    ).toBe('76px minmax(0,1fr) 180px 120px 76px')
   })
 })

@@ -5,6 +5,17 @@ export type GitGraphViewSettings = {
   showDate: boolean
   relativeDates: boolean
   muteMerges: boolean
+  authorWidth: number
+  dateWidth: number
+}
+
+export const GIT_GRAPH_AUTHOR_WIDTH = { min: 80, max: 320, default: 132 } as const
+export const GIT_GRAPH_DATE_WIDTH = { min: 72, max: 240, default: 96 } as const
+
+function clampWidth(value: unknown, bounds: { min: number; max: number; default: number }): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(bounds.max, Math.max(bounds.min, Math.round(value)))
+    : bounds.default
 }
 
 type StorageLike = {
@@ -13,7 +24,14 @@ type StorageLike = {
 }
 
 export function defaultGitGraphViewSettings(): GitGraphViewSettings {
-  return { showAuthor: true, showDate: true, relativeDates: false, muteMerges: false }
+  return {
+    showAuthor: true,
+    showDate: true,
+    relativeDates: false,
+    muteMerges: false,
+    authorWidth: GIT_GRAPH_AUTHOR_WIDTH.default,
+    dateWidth: GIT_GRAPH_DATE_WIDTH.default
+  }
 }
 
 export function normalizeGitGraphViewSettings(value: unknown): GitGraphViewSettings {
@@ -37,16 +55,34 @@ export function normalizeGitGraphViewSettings(value: unknown): GitGraphViewSetti
     muteMerges:
       'muteMerges' in value && typeof value.muteMerges === 'boolean'
         ? value.muteMerges
-        : defaults.muteMerges
+        : defaults.muteMerges,
+    authorWidth:
+      'authorWidth' in value
+        ? clampWidth(value.authorWidth, GIT_GRAPH_AUTHOR_WIDTH)
+        : defaults.authorWidth,
+    dateWidth:
+      'dateWidth' in value ? clampWidth(value.dateWidth, GIT_GRAPH_DATE_WIDTH) : defaults.dateWidth
   }
+}
+
+export const GIT_GRAPH_COMPACT_WIDTH_PX = 560
+
+export function effectiveGitGraphViewSettings(
+  settings: GitGraphViewSettings,
+  width: number | null
+): GitGraphViewSettings {
+  if (width === null || width <= 0 || width >= GIT_GRAPH_COMPACT_WIDTH_PX) {
+    return settings
+  }
+  return { ...settings, showAuthor: false, showDate: false }
 }
 
 export function gitGraphGridTemplate(settings: GitGraphViewSettings): string {
   return [
     '76px',
     'minmax(0,1fr)',
-    ...(settings.showAuthor ? ['132px'] : []),
-    ...(settings.showDate ? ['96px'] : []),
+    ...(settings.showAuthor ? [`${settings.authorWidth}px`] : []),
+    ...(settings.showDate ? [`${settings.dateWidth}px`] : []),
     '76px'
   ].join(' ')
 }
