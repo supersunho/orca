@@ -95,6 +95,54 @@ test('runs stash, sync, checkout, rename, and delete through the UI', async ({
     await expect.poll(() => git(seededRepoPath, ['log', '-1', '--format=%s'])).toBe('remote change')
 
     const row = orcaPage.locator('[data-testid="git-graph-row"]').first()
+    await orcaPage.getByRole('button', { name: 'Remotes' }).click()
+    await orcaPage.getByLabel('Operation').selectOption('set-url')
+    await orcaPage.getByLabel('Remote name').fill('e2e-origin')
+    await orcaPage.getByLabel('Remote URL').fill(`${pathToFileURL(origin).href}/moved`)
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect
+      .poll(() => git(seededRepoPath, ['remote', 'get-url', 'e2e-origin']))
+      .toContain('/moved')
+    await orcaPage.getByRole('button', { name: 'Remotes' }).click()
+    await orcaPage.getByLabel('Operation').selectOption('set-url')
+    await orcaPage.getByLabel('Remote name').fill('e2e-origin')
+    await orcaPage.getByLabel('Remote URL').fill(pathToFileURL(origin).href)
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect
+      .poll(() => git(seededRepoPath, ['remote', 'get-url', 'e2e-origin']))
+      .toBe(pathToFileURL(origin).href)
+
+    git(seededRepoPath, ['remote', 'add', 'origin', pathToFileURL(origin).href])
+    const tagName = `e2e-phase2-tag-${Date.now()}`
+    await row.click({ button: 'right' })
+    await orcaPage.getByRole('menuitem', { name: 'Create tag here' }).click()
+    await orcaPage.getByLabel('Tag name').fill(tagName)
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect.poll(() => git(seededRepoPath, ['tag', '--list', tagName])).toBe(tagName)
+    const tagRow = orcaPage.locator('[data-testid="git-graph-row"]').filter({
+      has: orcaPage.getByRole('button', { name: tagName, exact: true })
+    })
+    await expect(tagRow).toBeVisible({ timeout: 15_000 })
+    await tagRow.click({ button: 'right' })
+    await orcaPage.getByRole('menuitem', { name: `Push tag ${tagName}` }).click()
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect.poll(() => git(origin, ['tag', '--list', tagName])).toBe(tagName)
+    await tagRow.click({ button: 'right' })
+    await orcaPage.getByRole('menuitem', { name: `Delete tag ${tagName}` }).click()
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect.poll(() => git(seededRepoPath, ['tag', '--list', tagName])).toBe('')
+
+    const occupiedRow = orcaPage.locator('[data-testid="git-graph-row"]').filter({
+      has: orcaPage.getByRole('button', { name: 'e2e-secondary', exact: true })
+    })
+    await expect(occupiedRow).toBeVisible({ timeout: 15_000 })
+    await occupiedRow.click({ button: 'right' })
+    await orcaPage.getByRole('menuitem', { name: 'Checkout e2e-secondary' }).click()
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect(orcaPage.getByText(/checked out in another worktree/i)).toBeVisible({
+      timeout: 15_000
+    })
+
     await row.click({ button: 'right' })
     await orcaPage.getByRole('menuitem', { name: 'Create branch here' }).click()
     const branchName = `e2e-phase2-${Date.now()}`
