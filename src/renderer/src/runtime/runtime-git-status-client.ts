@@ -176,6 +176,7 @@ export async function getRuntimeGitHistory(
 ): Promise<GitHistoryResult> {
   const target = context.target
   if (target.kind === 'local' || !context.worktreeId) {
+    // Local IPC has no cancel channel; aborting only suppresses stale renderer results.
     return window.api.git.history({
       worktreePath: resolveLocalWorktreePath(context),
       connectionId: context.connectionId,

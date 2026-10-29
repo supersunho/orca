@@ -3,7 +3,7 @@ import {
   generateRuntimeCommitMessage,
   generateRuntimePullRequestFields
 } from './runtime-git-generation-client'
-import { getRuntimeGitStatus } from './runtime-git-status-client'
+import { getRuntimeGitHistory, getRuntimeGitStatus } from './runtime-git-status-client'
 import {
   createCompatibleRuntimeStatusResponseIfNeeded,
   type RuntimeEnvironmentCallRequest
@@ -88,6 +88,31 @@ beforeEach(() => {
 })
 
 describe('runtime git client', () => {
+  it('keeps local history on IPC and does not put the signal on the payload', async () => {
+    gitHistory.mockResolvedValue({
+      items: [],
+      hasIncomingChanges: false,
+      hasOutgoingChanges: false,
+      hasMore: false,
+      limit: 300,
+      scope: 'all-refs'
+    })
+    const controller = new AbortController()
+
+    await getRuntimeGitHistory(
+      { target: { kind: 'local' as const }, worktreeId: 'wt-1', worktreePath: '/repo' },
+      { allRefs: true, limit: 300 },
+      { signal: controller.signal }
+    )
+
+    expect(gitHistory).toHaveBeenCalledWith({
+      worktreePath: '/repo',
+      connectionId: undefined,
+      allRefs: true,
+      limit: 300
+    })
+  })
+
   it('uses the backing folder path for local folder-workspace status', async () => {
     gitStatus.mockResolvedValue({ entries: [], conflictOperation: 'unknown' })
     const workspaceId = '123e4567-e89b-12d3-a456-426614174000'

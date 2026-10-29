@@ -77,14 +77,14 @@ export function useGitGraphHistory({
       { signal: controller.signal }
     )
       .then((next) => {
-        if (requestSeqRef.current !== seq) {
+        if (requestSeqRef.current !== seq || controller.signal.aborted) {
           return
         }
         setResult(next)
         setStatus('idle')
       })
       .catch((nextError: unknown) => {
-        if (requestSeqRef.current !== seq || isAbortError(nextError)) {
+        if (requestSeqRef.current !== seq || controller.signal.aborted || isAbortError(nextError)) {
           return
         }
         setStatus('error')
@@ -125,7 +125,7 @@ export function useGitGraphHistory({
         },
         { signal: controller.signal }
       )
-      if (requestSeqRef.current !== seq) {
+      if (requestSeqRef.current !== seq || controller.signal.aborted) {
         return
       }
       setResult((previous) => {
@@ -137,7 +137,7 @@ export function useGitGraphHistory({
       })
       setStatus('idle')
     } catch (nextError: unknown) {
-      if (requestSeqRef.current !== seq || isAbortError(nextError)) {
+      if (requestSeqRef.current !== seq || controller.signal.aborted || isAbortError(nextError)) {
         return
       }
       setStatus('error')
