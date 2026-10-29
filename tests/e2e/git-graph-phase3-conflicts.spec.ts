@@ -208,19 +208,32 @@ test('aborts a merge conflict and restores a hard-reset backup through the UI', 
     expect(dropResult).toMatchObject({ ok: true })
     expect(git(seededRepoPath, ['rev-parse', 'HEAD'])).not.toBe(beforeDrop)
   } finally {
-    const operations: [string, string[]][] = [
-      ['MERGE_HEAD', ['merge', '--abort']],
-      ['REBASE_HEAD', ['rebase', '--abort']],
-      ['CHERRY_PICK_HEAD', ['cherry-pick', '--abort']],
-      ['REVERT_HEAD', ['revert', '--abort']]
-    ]
-    for (const [marker, command] of operations) {
+    const gitDir = git(seededRepoPath, ['rev-parse', '--git-dir'])
+    const rebaseInProgress =
+      existsSync(path.resolve(seededRepoPath, gitDir, 'rebase-merge')) ||
+      existsSync(path.resolve(seededRepoPath, gitDir, 'rebase-apply'))
+    const hasMarker = (marker: string): boolean => {
       try {
-        if (git(seededRepoPath, ['rev-parse', '--verify', marker])) {
-          git(seededRepoPath, command)
-        }
+        git(seededRepoPath, ['rev-parse', '--quiet', '--verify', marker])
+        return true
       } catch {
-        // This operation is not in progress.
+        return false
+      }
+    }
+    const operations: [boolean, string[]][] = [
+      [hasMarker('MERGE_HEAD'), ['merge', '--abort']],
+      [rebaseInProgress, ['rebase', '--abort']],
+      [hasMarker('CHERRY_PICK_HEAD'), ['cherry-pick', '--abort']],
+      [hasMarker('REVERT_HEAD'), ['revert', '--abort']]
+    ]
+    for (const [active, command] of operations) {
+      if (!active) {
+        continue
+      }
+      try {
+        git(seededRepoPath, command)
+      } catch {
+        // The operation ended between the probe and the abort.
       }
     }
     try {

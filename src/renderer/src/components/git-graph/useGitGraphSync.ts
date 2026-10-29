@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { getConnectionId } from '@/lib/connection-context'
 import { fetchRuntimeGit, pullRuntimeGit, pushRuntimeGit } from '@/runtime/runtime-git-sync-client'
@@ -21,6 +22,7 @@ export function useGitGraphSync({
   runSync: (kind: 'fetch' | 'pull' | 'push' | 'forcePush') => Promise<void>
 } {
   const [syncBusy, setSyncBusy] = useState(false)
+  const pushBranch = useAppStore((state) => state.pushBranch)
 
   const runSync = async (kind: 'fetch' | 'pull' | 'push' | 'forcePush'): Promise<void> => {
     if (!worktreePath || !ownerTarget) {
@@ -39,7 +41,10 @@ export function useGitGraphSync({
       } else if (kind === 'pull') {
         await pullRuntimeGit(context)
       } else if (kind === 'forcePush') {
-        await pushRuntimeGit(context, { forceWithLease: true })
+        await pushBranch(worktreeId, worktreePath, false, context.connectionId, undefined, {
+          forceWithLease: true,
+          runtimeTarget: context.target
+        })
       } else {
         await pushRuntimeGit(context)
       }
