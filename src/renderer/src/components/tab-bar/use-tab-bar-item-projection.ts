@@ -12,6 +12,8 @@ import {
 import type { TabBarItem } from './tab-bar-item-kind'
 import type { DropIndicator } from './drop-indicator'
 import { sameStringArray } from '@/runtime/web-session-tabs-sync/state-equality-core'
+import { isWebClientLocation } from '@/lib/web-client-location'
+import { visibleGitGraphTabIds } from './tab-bar-visible-git-graph-tabs'
 
 export type TabBarItemProjection = {
   orderedItems: TabBarItem[]
@@ -81,10 +83,7 @@ export function useTabBarItemProjection({
     [agentSessionTabs]
   )
   const gitGraphTabIds = useMemo(
-    () =>
-      unifiedTabs
-        .filter((tab) => tab.groupId === resolvedGroupId && tab.contentType === 'git-graph')
-        .map((tab) => tab.id),
+    () => visibleGitGraphTabIds(unifiedTabs, resolvedGroupId, isWebClientLocation()),
     [unifiedTabs, resolvedGroupId]
   )
   const orderedItems = useMemo(

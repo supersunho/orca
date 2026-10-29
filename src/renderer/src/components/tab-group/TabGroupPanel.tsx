@@ -1,4 +1,5 @@
-import { Suspense, useCallback, useMemo } from 'react'
+import { Suspense, useCallback, useEffect, useMemo } from 'react'
+import { isWebClientLocation } from '@/lib/web-client-location'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { useDroppable } from '@dnd-kit/core'
 import { useAppStore } from '../../store'
@@ -80,6 +81,16 @@ export default function TabGroupPanel({
     tabBarOrder,
     terminalTabs
   } = model
+  const webGitGraphActive = activeTab?.contentType === 'git-graph' && isWebClientLocation()
+  useEffect(() => {
+    if (!webGitGraphActive) {
+      return
+    }
+    const fallback = model.groupTabs.find((tab) => tab.contentType === 'terminal')
+    if (fallback) {
+      commands.activateTerminal(fallback.entityId)
+    }
+  }, [commands, model.groupTabs, webGitGraphActive])
   // Why: one strip owns the worktree's client-hosted rows, or every split repeats them.
   const ownsClientHostedRows = useAppStore(
     (state) =>
@@ -334,7 +345,15 @@ export default function TabGroupPanel({
             data-contextual-tour-target="workspace-agent-terminal-tip"
           />
         ) : null}
-        {activeTab?.contentType === 'git-graph' && (
+        {activeTab?.contentType === 'git-graph' && isWebClientLocation() && (
+          <div className="absolute inset-0 flex items-center justify-center p-6 text-sm text-muted-foreground">
+            {translate(
+              'auto.components.tab.group.TabGroupPanel.gitGraphDesktopOnly',
+              'Git Graph is available in the desktop app.'
+            )}
+          </div>
+        )}
+        {activeTab?.contentType === 'git-graph' && !isWebClientLocation() && (
           <div className="absolute inset-0 flex min-h-0 min-w-0">
             <Suspense
               fallback={

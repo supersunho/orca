@@ -3778,7 +3778,8 @@
             "814fb04c43": "Loading editor...",
             "9acaf92093": "Pane Actions",
             "closePaneColumn": "Close split pane",
-            "gitGraphLoading": "Loading Git Graph..."
+            "gitGraphLoading": "Loading Git Graph...",
+            "gitGraphDesktopOnly": "Git Graph is available in the desktop app."
           },
           "AiVaultSessionDropLayer": {
             "dropOntoTerminalPane": "Drop onto a terminal pane to resume this session.",
