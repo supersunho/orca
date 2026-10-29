@@ -114,5 +114,21 @@ describe('GitGraphPane folder workspace', () => {
     expect(mocks.auxRefs).toHaveBeenCalledWith(
       expect.objectContaining({ worktreePath: null, ownerTarget: null })
     )
+    expect(mocks.status).toHaveBeenCalledWith(
+      expect.objectContaining({ worktreePath: null, ownerTarget: null })
+    )
+    expect(mocks.actions).toHaveBeenCalledWith(
+      expect.objectContaining({ worktreePath: null, ownerTarget: null })
+    )
+    expect(mocks.selection).toHaveBeenCalledWith(
+      expect.objectContaining({ worktreePath: null, ownerTarget: null })
+    )
+    expect(mocks.sync).toHaveBeenCalledWith(
+      expect.objectContaining({ worktreePath: null, ownerTarget: null })
+    )
+    expect(mocks.historyCommitActions).toHaveBeenCalledWith(
+      expect.objectContaining({ worktreePath: null, activeRepoTarget: null })
+    )
+    expect(mocks.rangeActions).toHaveBeenCalledWith(expect.objectContaining({ worktreePath: null }))
   })
 })

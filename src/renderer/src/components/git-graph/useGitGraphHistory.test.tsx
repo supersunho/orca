@@ -53,6 +53,18 @@ function renderHistory(worktreeId = 'worktree-a') {
 }
 
 describe('useGitGraphHistory', () => {
+  it('does not fetch without a Git worktree path', () => {
+    renderHook(() =>
+      useGitGraphHistory({
+        worktreeId: 'folder:group',
+        worktreePath: null,
+        ownerTarget: localTarget
+      })
+    )
+
+    expect(mocks.getRuntimeGitHistory).not.toHaveBeenCalled()
+  })
+
   it('loads 300 initially and 100 more per page', async () => {
     mocks.getRuntimeGitHistory
       .mockResolvedValueOnce(result(300, { hasMore: true }))
