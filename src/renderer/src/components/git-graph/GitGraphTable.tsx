@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import type {
   GitHistoryItem,
   GitHistoryItemRef,
@@ -52,6 +52,7 @@ export function GitGraphTable({
   onToggleRefFilter,
   menuHandlers,
   onColumnResize,
+  onClearSelection,
   onLoadMore
 }: {
   status: 'idle' | 'loading' | 'refreshing' | 'error'
@@ -77,11 +78,20 @@ export function GitGraphTable({
   onToggleRefFilter: (ref: GitHistoryItemRef) => void
   menuHandlers: GitGraphActionMenuHandlers
   onColumnResize: (key: ColumnResizeKey, width: number) => void
+  onClearSelection: () => void
   onLoadMore: () => void
 }): React.JSX.Element {
+  const tableRef = useRef<HTMLDivElement>(null)
   const [tableWidth, setTableWidth] = useState<number | null>(null)
   const [resize, setResize] = useState<ColumnResize | null>(null)
   const measuredRef = useMeasuredWidth(setTableWidth)
+  const setTableNode = useCallback(
+    (node: HTMLDivElement | null) => {
+      measuredRef(node)
+      tableRef.current = node
+    },
+    [measuredRef]
+  )
   const effectiveSettings = effectiveGitGraphViewSettings(viewSettings, tableWidth)
   const previewSettings = resize
     ? { ...effectiveSettings, [resize.key]: resize.width }
@@ -131,8 +141,42 @@ export function GitGraphTable({
     onColumnResize(key, Math.min(bounds.max, Math.max(bounds.min, previewSettings[key] + delta)))
   }
 
+  const handleRowNavigation = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    const target = event.target
+    if (!(target instanceof HTMLElement) || !target.closest('[data-testid="git-graph-row"]')) {
+      return
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onClearSelection()
+      return
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+      return
+    }
+    const rows = Array.from(
+      tableRef.current?.querySelectorAll<HTMLElement>('[data-testid="git-graph-row"]') ?? []
+    )
+    const current = rows.findIndex((row) => row === target || row.contains(target))
+    if (current === -1) {
+      return
+    }
+    event.preventDefault()
+    const nextIndex =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? rows.length - 1
+          : Math.min(rows.length - 1, Math.max(0, current + (event.key === 'ArrowDown' ? 1 : -1)))
+    rows[nextIndex]?.focus()
+  }
+
   return (
-    <div ref={measuredRef} className="flex min-h-0 flex-1 flex-col">
+    <div
+      ref={setTableNode}
+      className="flex min-h-0 flex-1 flex-col"
+      onKeyDown={handleRowNavigation}
+    >
       <div
         className="grid shrink-0 gap-x-2 border-b border-border bg-muted/30 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
         style={{ gridTemplateColumns: gitGraphGridTemplate(previewSettings) }}

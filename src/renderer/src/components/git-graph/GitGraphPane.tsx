@@ -308,6 +308,7 @@ export default function GitGraphPane({
             onColumnResize={(key, width) =>
               setViewSettings((previous) => ({ ...previous, [key]: width }))
             }
+            onClearSelection={() => setSelectedIds([])}
             onLoadMore={() => void loadMore()}
           />
         </div>

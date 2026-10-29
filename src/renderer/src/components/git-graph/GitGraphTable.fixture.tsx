@@ -128,6 +128,7 @@ function table(width: number) {
         onToggleRefFilter={() => undefined}
         menuHandlers={handlers}
         onColumnResize={() => undefined}
+        onClearSelection={() => undefined}
         onLoadMore={() => undefined}
       />
     </div>
