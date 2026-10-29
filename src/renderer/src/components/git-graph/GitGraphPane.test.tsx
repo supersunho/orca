@@ -14,7 +14,8 @@ const mocks = vi.hoisted(() => ({
   rangeActions: vi.fn(),
   menuHandlers: vi.fn(),
   sync: vi.fn(),
-  historyCommitActions: vi.fn()
+  historyCommitActions: vi.fn(),
+  setActiveWorktree: vi.fn()
 }))
 
 const folderWorktree = {
@@ -33,6 +34,14 @@ const gitWorktree = {
   head: 'commit-a'
 }
 
+const siblingWorktree = {
+  id: 'worktree-b',
+  repoId: 'repo-a',
+  path: '/repo-feature//',
+  branch: 'refs/heads/feature',
+  head: 'commit-b'
+}
+
 const commit = {
   id: 'commit-a',
   parentIds: [],
@@ -45,10 +54,11 @@ const commit = {
 vi.mock('@/store', () => ({
   useAppStore: (selector: (state: Record<string, unknown>) => unknown) =>
     selector({
+      setActiveWorktree: mocks.setActiveWorktree,
       openCommitDiff: vi.fn(),
       openCommitAllDiffs: vi.fn(),
       openConflictReview: vi.fn(),
-      worktreesByRepo: {}
+      worktreesByRepo: { 'repo-a': [gitWorktree, siblingWorktree] }
     })
 }))
 vi.mock('@/store/selectors', () => ({
@@ -234,5 +244,17 @@ describe('GitGraphPane folder workspace', () => {
     expect(
       second.getByRole('separator', { name: 'Resize author column' }).getAttribute('aria-valuenow')
     ).toBe('140')
+  })
+
+  it('exposes a redirect only for a matching sibling worktree', () => {
+    configureHooks(true)
+    renderPane('worktree-a')
+    const hookArgs = mocks.actions.mock.calls.at(-1)?.[0]
+    const redirect = hookArgs?.onOccupiedBranch('/repo-feature/')
+
+    expect(redirect).toBeTypeOf('function')
+    redirect?.()
+    expect(mocks.setActiveWorktree).toHaveBeenCalledWith('worktree-b')
+    expect(hookArgs?.onOccupiedBranch('/elsewhere')).toBeNull()
   })
 })

@@ -7,6 +7,7 @@ import { useGitHistoryCommitActions } from '../right-sidebar/source-control/sync
 import type { GitHistoryItem, GitHistoryItemRef } from '../../../../shared/git-history'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
 import type { GitGraphAction } from '../../../../shared/git-graph-actions'
+import { findOccupiedWorktree } from './git-graph-occupied-worktree'
 import { isFolderGitGraphWorkspace } from './git-graph-folder-workspace'
 import {
   readGitGraphViewSettings,
@@ -16,7 +17,11 @@ import {
 import { shortRefName } from './git-graph-row-refs'
 import { translate } from '@/i18n/i18n'
 import { GitGraphTable } from './GitGraphTable'
-import { GitGraphActionDialog, type GitGraphDialogRequest } from './GitGraphActionDialog'
+import {
+  GitGraphActionDialog,
+  gitGraphDialogRequestKey,
+  type GitGraphDialogRequest
+} from './GitGraphActionDialog'
 import { GitGraphAuxRefsDialog } from './GitGraphAuxRefsDialog'
 import { GitGraphRemoteDialog } from './GitGraphRemoteDialog'
 import { GitGraphSyncDialog } from './GitGraphSyncDialog'
@@ -92,14 +97,13 @@ export default function GitGraphPane({
 
   const redirectOccupiedBranch = useCallback(
     (occupiedPath: string) => {
-      const target = Object.values(worktreesByRepo ?? {})
-        .flat()
-        .find((candidate) => candidate.path === occupiedPath)
-      if (target) {
-        setActiveWorktree(target.id)
+      if (!worktree) {
+        return null
       }
+      const target = findOccupiedWorktree(worktrees, occupiedPath, worktree)
+      return target ? () => setActiveWorktree(target.id) : null
     },
-    [setActiveWorktree, worktreesByRepo]
+    [setActiveWorktree, worktree, worktrees]
   )
 
   const {
@@ -323,6 +327,7 @@ export default function GitGraphPane({
               setViewSettings((previous) => ({ ...previous, [key]: width }))
             }
             onClearSelection={() => setSelectedIds([])}
+            onNavigate={(item) => setSelectedIds([item.id])}
             onLoadMore={() => void loadMore()}
           />
         </div>
@@ -387,6 +392,7 @@ export default function GitGraphPane({
 
       {dialogRequest && (
         <GitGraphActionDialog
+          key={gitGraphDialogRequestKey(dialogRequest)}
           request={dialogRequest}
           busy={actionBusy}
           onCancel={() => setDialogRequest(null)}

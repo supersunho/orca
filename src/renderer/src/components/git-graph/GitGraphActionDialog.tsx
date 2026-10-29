@@ -35,6 +35,10 @@ export type GitGraphDialogRequest =
       action: GitGraphAction
     }
 
+export function gitGraphDialogRequestKey(request: GitGraphDialogRequest): string {
+  return JSON.stringify(request)
+}
+
 export function GitGraphActionDialog({
   request,
   busy,
@@ -66,6 +70,9 @@ export function GitGraphActionDialog({
   const needsAcknowledgment = request.kind === 'confirm' && Boolean(request.acknowledge)
 
   const submit = (): void => {
+    if (needsAcknowledgment && !acknowledged) {
+      return
+    }
     switch (request.kind) {
       case 'createBranch':
         onConfirm({

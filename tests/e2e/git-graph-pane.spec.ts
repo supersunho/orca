@@ -40,6 +40,15 @@ test.describe('Git Graph pane', () => {
     expect(await orcaPage.locator('[data-testid="git-graph-row"]').count()).toBeGreaterThan(0)
     await expect(orcaPage.getByText('Author', { exact: true })).toBeVisible()
 
+    const resizeAuthor = orcaPage.getByRole('separator', { name: 'Resize author column' })
+    await resizeAuthor.focus()
+    await resizeAuthor.press('ArrowRight')
+    await expect(resizeAuthor).toHaveAttribute('aria-valuenow', '140')
+    const resized = await orcaPage.evaluate(() =>
+      localStorage.getItem('orca.gitGraph.viewSettings.v1')
+    )
+    expect(JSON.parse(resized ?? '{}')).toMatchObject({ authorWidth: 140 })
+
     await orcaPage.getByRole('button', { name: 'Git Graph view settings' }).click()
     await orcaPage.getByRole('menuitemcheckbox', { name: 'Author column' }).click()
 

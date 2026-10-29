@@ -34,7 +34,8 @@ afterEach(() => {
 describe('useGitGraphActions occupied branch', () => {
   it('offers a redirect to the occupying worktree', async () => {
     mocks.runAction.mockResolvedValue(occupiedResult)
-    const onOccupiedBranch = vi.fn()
+    const redirect = vi.fn()
+    const onOccupiedBranch = vi.fn(() => redirect)
     const { result } = renderHook(() =>
       useGitGraphActions({
         worktreeId: 'worktree-a',
@@ -51,5 +52,24 @@ describe('useGitGraphActions occupied branch', () => {
     const options = mocks.toastError.mock.calls[0]?.[1]
     options?.action?.onClick?.()
     expect(onOccupiedBranch).toHaveBeenCalledWith('/other')
+    expect(redirect).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the message-only toast when the path cannot be resolved', async () => {
+    mocks.runAction.mockResolvedValue(occupiedResult)
+    const { result } = renderHook(() =>
+      useGitGraphActions({
+        worktreeId: 'worktree-a',
+        worktreePath: '/repo',
+        ownerTarget: { kind: 'local' },
+        onCompleted: vi.fn(),
+        onOccupiedBranch: () => null
+      })
+    )
+
+    await result.current.runAction({ kind: 'checkout', branch: 'release' })
+
+    await waitFor(() => expect(mocks.toastError).toHaveBeenCalledTimes(1))
+    expect(mocks.toastError.mock.calls[0]?.[1]).toBeUndefined()
   })
 })

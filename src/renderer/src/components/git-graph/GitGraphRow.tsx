@@ -63,7 +63,7 @@ export function GitGraphRow({
         'grid min-h-[28px] w-full min-w-0 cursor-pointer items-center gap-x-2 border-b border-border/40 px-2 py-0.5 text-xs outline-none',
         'hover:bg-accent/40 focus-visible:bg-accent/50',
         selected && 'bg-accent/60',
-        mutedMerge && 'text-muted-foreground'
+        mutedMerge && 'text-muted-foreground opacity-60'
       )}
       style={{ gridTemplateColumns: gitGraphGridTemplate(viewSettings) }}
     >

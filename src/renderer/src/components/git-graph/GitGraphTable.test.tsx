@@ -53,9 +53,10 @@ const handlers: GitGraphActionMenuHandlers = {
   onCompare: vi.fn()
 }
 
-function renderTable(onClearSelection = vi.fn()) {
+function renderTable(onClearSelection = vi.fn(), onNavigate = vi.fn()) {
   return {
     onClearSelection,
+    onNavigate,
     ...render(
       <GitGraphTable
         status="idle"
@@ -89,6 +90,7 @@ function renderTable(onClearSelection = vi.fn()) {
         menuHandlers={handlers}
         onColumnResize={vi.fn()}
         onClearSelection={onClearSelection}
+        onNavigate={onNavigate}
         onLoadMore={vi.fn()}
       />
     )
@@ -96,17 +98,20 @@ function renderTable(onClearSelection = vi.fn()) {
 }
 
 describe('GitGraphTable keyboard navigation', () => {
-  it('moves row focus with arrows, Home, and End', () => {
-    const { getAllByTestId } = renderTable()
+  it('moves row focus and selection with arrows, Home, and End', () => {
+    const { getAllByTestId, onNavigate } = renderTable()
     const rows = getAllByTestId('git-graph-row')
     rows[0]?.focus()
 
     fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' })
     expect(document.activeElement).toBe(rows[1])
+    expect(onNavigate).toHaveBeenLastCalledWith(items[1])
     fireEvent.keyDown(rows[1]!, { key: 'End' })
     expect(document.activeElement).toBe(rows[2])
+    expect(onNavigate).toHaveBeenLastCalledWith(items[2])
     fireEvent.keyDown(rows[2]!, { key: 'Home' })
     expect(document.activeElement).toBe(rows[0])
+    expect(onNavigate).toHaveBeenLastCalledWith(items[0])
   })
 
   it('clears selection on Escape', () => {

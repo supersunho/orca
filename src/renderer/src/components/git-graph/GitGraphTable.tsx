@@ -53,6 +53,7 @@ export function GitGraphTable({
   menuHandlers,
   onColumnResize,
   onClearSelection,
+  onNavigate,
   onLoadMore
 }: {
   status: 'idle' | 'loading' | 'refreshing' | 'error'
@@ -79,6 +80,7 @@ export function GitGraphTable({
   menuHandlers: GitGraphActionMenuHandlers
   onColumnResize: (key: ColumnResizeKey, width: number) => void
   onClearSelection: () => void
+  onNavigate: (item: GitHistoryItem) => void
   onLoadMore: () => void
 }): React.JSX.Element {
   const tableRef = useRef<HTMLDivElement>(null)
@@ -169,6 +171,10 @@ export function GitGraphTable({
           ? rows.length - 1
           : Math.min(rows.length - 1, Math.max(0, current + (event.key === 'ArrowDown' ? 1 : -1)))
     rows[nextIndex]?.focus()
+    const destination = viewModels[nextIndex]
+    if (destination) {
+      onNavigate(destination.historyItem)
+    }
   }
 
   return (

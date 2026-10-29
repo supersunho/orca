@@ -1,4 +1,6 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
+import { buildGitHistoryViewModels } from '../../../../shared/git-history-graph'
+import type { GitHistoryItemViewModel } from '../../../../shared/git-history-graph'
 import type { GitGraphActionMenuHandlers } from './GitGraphActionMenu'
 import { GitGraphTable } from './GitGraphTable'
 import { defaultGitGraphViewSettings } from './git-graph-view-settings'
@@ -56,7 +58,41 @@ const root = {
   timestamp: timestamps.root
 }
 
-const viewModels = [
+const side = {
+  id: 'd4e5f60718293a4b5c6d7e8f9012345678901234',
+  parentIds: [middle.id],
+  subject: 'feat: parallel agent worktree',
+  message: 'feat: parallel agent worktree',
+  displayId: 'd4e5f60',
+  author: 'Agent',
+  timestamp: timestamps.middle
+}
+
+const merge = {
+  id: 'e5f60718293a4b5c6d7e8f901234567890123456',
+  parentIds: [newest.id, side.id],
+  subject: 'Merge branch feature into main',
+  message: 'Merge branch feature into main',
+  displayId: 'e5f6071',
+  author: 'Sunho',
+  timestamp: timestamps.newest,
+  references: [
+    {
+      id: 'refs/heads/main',
+      name: 'main',
+      category: 'branches' as const,
+      color: 'git-graph-lane-2' as const
+    }
+  ]
+}
+
+const mergeViewModels = buildGitHistoryViewModels([merge, newest, side, middle, root], new Map(), {
+  id: 'refs/heads/main',
+  name: 'main',
+  revision: merge.id
+})
+
+const viewModels: GitHistoryItemViewModel[] = [
   {
     historyItem: newest,
     inputSwimlanes: [],
@@ -94,25 +130,26 @@ const handlers: GitGraphActionMenuHandlers = {
   onCompare: () => undefined
 }
 
-function table(width: number) {
+function table(width: number, settings = defaultGitGraphViewSettings(), models = viewModels) {
+  const headItem = models[0]?.historyItem
   return (
     <div style={{ width }}>
       <GitGraphTable
         status="idle"
         result={{
-          items: [newest, middle, root],
+          items: models.map((model) => model.historyItem),
           hasIncomingChanges: false,
           hasOutgoingChanges: false,
           hasMore: true,
-          limit: 3,
+          limit: models.length,
           scope: 'all-refs'
         }}
         error={null}
-        viewSettings={defaultGitGraphViewSettings()}
-        viewModels={viewModels}
-        worktreeHeads={new Map([[newest.id, ['main']]])}
-        actionContextHeadId={newest.id}
-        selectedIds={[middle.id]}
+        viewSettings={settings}
+        viewModels={models}
+        worktreeHeads={new Map(headItem ? [[headItem.id, ['main']]] : [])}
+        actionContextHeadId={headItem?.id ?? null}
+        selectedIds={models[1] ? [models[1].historyItem.id] : []}
         activeRefFilter={[]}
         hasWorktreeStatus
         hasWorkingTreeChanges={false}
@@ -129,6 +166,7 @@ function table(width: number) {
         menuHandlers={handlers}
         onColumnResize={() => undefined}
         onClearSelection={() => undefined}
+        onNavigate={() => undefined}
         onLoadMore={() => undefined}
       />
     </div>
@@ -143,4 +181,9 @@ export const wide = defineFixture({
 export const compact = defineFixture({
   width: 480,
   render: () => table(480)
+})
+
+export const mergeMuted = defineFixture({
+  width: 900,
+  render: () => table(900, { ...defaultGitGraphViewSettings(), muteMerges: true }, mergeViewModels)
 })

@@ -27,7 +27,7 @@ export function useGitGraphActions({
   worktreePath: string | null
   ownerTarget: RuntimeClientTarget | null
   onCompleted: () => void
-  onOccupiedBranch?: (worktreePath: string) => void
+  onOccupiedBranch?: (worktreePath: string) => (() => void) | null
 }): {
   busy: boolean
   conflict: GitGraphConflictState | null
@@ -78,14 +78,18 @@ export function useGitGraphActions({
           return result
         }
         const occupiedWorktree = result.occupiedWorktree
-        if (result.code === 'occupied-branch' && occupiedWorktree && onOccupiedBranch) {
+        const occupiedAction =
+          result.code === 'occupied-branch' && occupiedWorktree && onOccupiedBranch
+            ? onOccupiedBranch(occupiedWorktree)
+            : null
+        if (occupiedAction) {
           toast.error(result.message, {
             action: {
               label: translate(
                 'auto.components.git.graph.actions.openOccupiedWorktree',
                 'Open worktree'
               ),
-              onClick: () => onOccupiedBranch(occupiedWorktree)
+              onClick: occupiedAction
             }
           })
           return result
