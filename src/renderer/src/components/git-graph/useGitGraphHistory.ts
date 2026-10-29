@@ -52,10 +52,12 @@ export function useGitGraphHistory({
   }, [searchDraft])
 
   useEffect(() => {
+    loadMoreAbortRef.current?.abort()
+    loadMoreAbortRef.current = null
     if (!worktreePath || !ownerTarget) {
+      requestSeqRef.current += 1
       return
     }
-    loadMoreAbortRef.current?.abort()
     const controller = new AbortController()
     const seq = requestSeqRef.current + 1
     requestSeqRef.current = seq
@@ -90,7 +92,11 @@ export function useGitGraphHistory({
         setStatus('error')
         setError(errorMessage(nextError))
       })
-    return () => controller.abort()
+    return () => {
+      controller.abort()
+      loadMoreAbortRef.current?.abort()
+      loadMoreAbortRef.current = null
+    }
   }, [worktreePath, ownerTarget, worktreeId, search, refFilter, refreshToken])
 
   const loadMore = useCallback(async () => {

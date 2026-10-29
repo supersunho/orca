@@ -152,7 +152,7 @@ describe('real unrelated Git histories', () => {
 
   it('loads HEAD history from a detached HEAD', async () => {
     const { repo, git } = await createRepository()
-    await git(['checkout', '--detach', 'first', '--quiet'])
+    await git(['checkout', '--quiet', '--detach', 'first'])
 
     const history = await loadGitHistoryFromExecutor(git, repo, { limit: 10 })
 

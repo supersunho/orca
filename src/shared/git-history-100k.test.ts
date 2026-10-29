@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import { afterAll, describe, expect, it } from 'vitest'
+import { resolveExecutableCommand } from './node-cli-command-resolution'
 import {
   loadGitHistoryFromExecutor,
   type GitHistoryExecutor,
@@ -14,10 +15,15 @@ import { buildDefaultGitHistoryColorMap, buildGitHistoryViewModels } from './git
 const ENABLED = process.env.ORCA_GIT_GRAPH_BENCH === '1'
 const COMMITS = 100_000
 const REFS = 1_000
+const gitBinary = resolveExecutableCommand(process.env.ORCA_TEST_GIT_BINARY ?? 'git')
+const fixtureEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => !key.toUpperCase().startsWith('GIT_'))
+)
 
 const executor: GitHistoryExecutor = async (args, cwd) => ({
-  stdout: execFileSync('git', args, {
+  stdout: execFileSync(gitBinary ?? 'git', args, {
     cwd,
+    env: fixtureEnv,
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
     stdio: ['ignore', 'pipe', 'pipe']
@@ -65,16 +71,18 @@ describe.skipIf(!ENABLED)('git graph history 100k commits / 1k refs', () => {
 
   it('records initial, load-more, and search latency', async () => {
     repo = path.join(await mkdtemp(path.join(tmpdir(), 'orca-git-graph-bench-')), 'repo')
-    execFileSync('git', ['init', '--quiet', repo])
-    execFileSync('git', ['fast-import', '--quiet'], {
+    execFileSync(gitBinary ?? 'git', ['init', '--quiet', repo], { env: fixtureEnv })
+    execFileSync(gitBinary ?? 'git', ['fast-import', '--quiet'], {
       cwd: repo,
+      env: fixtureEnv,
       input: fastImportStream(),
       maxBuffer: 64 * 1024 * 1024,
       stdio: ['pipe', 'ignore', 'pipe']
     })
     const refCount = Number(
-      execFileSync('git', ['for-each-ref', '--format=%(refname)'], {
+      execFileSync(gitBinary ?? 'git', ['for-each-ref', '--format=%(refname)'], {
         cwd: repo,
+        env: fixtureEnv,
         encoding: 'utf8'
       })
         .trim()

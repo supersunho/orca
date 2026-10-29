@@ -19,6 +19,7 @@ import { GitGraphRemoteDialog } from './GitGraphRemoteDialog'
 import { GitGraphSyncDialog } from './GitGraphSyncDialog'
 import { GitGraphConflictBanner } from './GitGraphConflictBanner'
 import { GitGraphStatusErrorBanner } from './GitGraphStatusErrorBanner'
+import { GitGraphOldRuntimeBanner, isOldRuntimeHistory } from './GitGraphOldRuntimeBanner'
 import { GitGraphDetailsPanel } from './GitGraphDetailsPanel'
 import { GitGraphToolbar } from './GitGraphToolbar'
 import { useGitGraphActions } from './useGitGraphActions'
@@ -238,14 +239,7 @@ export default function GitGraphPane({
         </div>
       )}
 
-      {result && result.scope !== 'all-refs' && (
-        <div className="shrink-0 border-b border-annotation-highlight/30 bg-annotation-highlight/5 px-3 py-1 text-[11px] text-annotation-highlight">
-          {translate(
-            'auto.components.git.graph.pane.oldRuntime',
-            'This runtime does not support the all-branch graph. Showing the current branch only.'
-          )}
-        </div>
-      )}
+      {isOldRuntimeHistory(result) && <GitGraphOldRuntimeBanner />}
 
       {statusReadError && <GitGraphStatusErrorBanner message={statusReadError} />}
 

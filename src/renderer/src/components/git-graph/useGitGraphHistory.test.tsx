@@ -92,6 +92,39 @@ describe('useGitGraphHistory', () => {
     expect(mocks.getRuntimeGitHistory).toHaveBeenCalledTimes(1)
   })
 
+  it('aborts an in-flight load-more request on unmount', async () => {
+    const signals: AbortSignal[] = []
+    mocks.getRuntimeGitHistory.mockImplementation(
+      (_context: unknown, options: { skip?: number }, transport: { signal?: AbortSignal }) => {
+        if (transport.signal) {
+          signals.push(transport.signal)
+        }
+        if (!options.skip) {
+          return Promise.resolve(result(300, { hasMore: true }))
+        }
+        const { promise, reject } = Promise.withResolvers<GitHistoryResult>()
+        transport.signal?.addEventListener(
+          'abort',
+          () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })),
+          { once: true }
+        )
+        return promise
+      }
+    )
+    const { result: hook, unmount } = renderHistory()
+
+    await waitFor(() => expect(hook.current.result?.items).toHaveLength(300))
+    let loadMore: Promise<void> = Promise.resolve()
+    act(() => {
+      loadMore = hook.current.loadMore()
+    })
+    await waitFor(() => expect(signals).toHaveLength(2))
+
+    unmount()
+    await waitFor(() => expect(signals[1]?.aborted).toBe(true))
+    await loadMore
+  })
+
   it('aborts the previous history request when the worktree changes', async () => {
     const signals: AbortSignal[] = []
     mocks.getRuntimeGitHistory.mockImplementation(
