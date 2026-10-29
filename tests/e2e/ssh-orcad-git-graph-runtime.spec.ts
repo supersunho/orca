@@ -2,14 +2,27 @@ import type { ElectronApplication, Page } from '@stablyai/playwright-test'
 import { expect, test } from './helpers/orca-app'
 import { createRestartSession } from './helpers/orca-restart'
 import { ensureTerminalVisible, waitForSessionReady } from './helpers/store'
+import type { GitGraphActionResult } from '../../src/shared/git-graph-actions'
 import {
   cleanupDockerSshHostTarget,
   DOCKER_SSH_HOST_REMOTE_REPO_PATH,
+  execDockerSshHostTargetCommand,
   startDockerSshHostTarget,
   type DockerSshHostTarget
 } from './helpers/docker-ssh-host-target'
 
 const TEMPLATE = process.env.ORCA_ORCAD_TEMPLATE_PATH
+
+function assertGitGraphActionResult(value: unknown): asserts value is GitGraphActionResult {
+  if (
+    value === null ||
+    typeof value !== 'object' ||
+    !('ok' in value) ||
+    typeof value.ok !== 'boolean'
+  ) {
+    throw new Error('git.graphAction returned an invalid result')
+  }
+}
 
 async function connectManagedHost(
   page: Page,
@@ -71,11 +84,7 @@ async function resolveRemoteWorktree(
       }
       await store.getState().fetchWorktrees(repo.id)
       const worktree = (store.getState().worktreesByRepo[repo.id] ?? [])[0]
-      if (!worktree) {
-        return null
-      }
-      store.getState().setActiveWorktree(worktree.id)
-      return worktree.id
+      return worktree?.id ?? null
     },
     { environmentId, repoPath }
   )
@@ -166,8 +175,47 @@ test('loads Git Graph history from a managed SSH runtime repo', async ({}, testI
     if (!worktreeId) {
       throw new Error('remote worktree disappeared after hydration')
     }
+    await launched.page.evaluate((id) => {
+      window.__store?.getState().setActiveWorktree(id)
+    }, worktreeId)
     await ensureTerminalVisible(launched.page)
     await openGitGraphTab(launched.page, worktreeId)
+    await expect(launched.page.getByText('initial', { exact: true })).toBeVisible({
+      timeout: 30_000
+    })
+
+    const tagName = `e2e-graph-${Date.now()}`
+    const tagResult = await launched.page.evaluate(
+      async ({ environmentId, worktreeId, tagName }) =>
+        window.api.runtimeEnvironments.call({
+          selector: environmentId,
+          method: 'git.graphAction',
+          params: {
+            worktree: `id:${worktreeId}`,
+            action: {
+              kind: 'createTag',
+              name: tagName,
+              target: 'HEAD',
+              push: false
+            }
+          }
+        }),
+      { environmentId, worktreeId, tagName }
+    )
+    if (!tagResult.ok) {
+      throw new Error(`SSH tag action failed: ${JSON.stringify(tagResult.error)}`)
+    }
+    const actionResult = tagResult.result
+    assertGitGraphActionResult(actionResult)
+    if (!actionResult.ok) {
+      throw new Error(`SSH tag action rejected: ${actionResult.message}`)
+    }
+    expect(
+      execDockerSshHostTargetCommand(
+        target,
+        `git -C ${DOCKER_SSH_HOST_REMOTE_REPO_PATH} tag --list ${tagName}`
+      ).trim()
+    ).toBe(tagName)
   } finally {
     if (app) {
       await session.close(app)

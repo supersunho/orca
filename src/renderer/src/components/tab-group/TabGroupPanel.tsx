@@ -14,7 +14,6 @@ import { getTabPaneBodyDroppableId, type HoveredTabInsertion } from './useTabDra
 import { tabGroupBodyAnchorName } from './tab-group-body-anchor'
 import { registerTabGroupBody } from './tab-group-body-geometry'
 import { observeTabGroupBodyGridSize } from '@/runtime/sync-runtime-graph'
-import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type { TabGroup } from '../../../../shared/tab-types'
 import type { ClientHostedBrowserRow } from '../../../../shared/client-hosted-browser-rows'
@@ -24,6 +23,7 @@ import { useEditorGroupFileDropOwner } from '../editor/use-editor-group-file-dro
 import { cn } from '@/lib/utils'
 import { UNFOCUSED_SPLIT_GROUP_OPACITY } from './split-group-dim'
 import { useWebGitGraphFallback } from './web-git-graph-fallback'
+import { GitGraphWebUnsupported } from '../git-graph/GitGraphWebUnsupported'
 
 const EditorPanel = lazy(() => import('../editor/EditorPanel'))
 const GitGraphPane = lazy(() => import('../git-graph/GitGraphPane'))
@@ -343,23 +343,7 @@ export default function TabGroupPanel({
           />
         ) : null}
         {activeTab?.contentType === 'git-graph' && isWebClientLocation() && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-sm text-muted-foreground">
-            {translate(
-              'auto.components.tab.group.TabGroupPanel.gitGraphDesktopOnly',
-              'Git Graph is available in the desktop app.'
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => commands.closeItem(activeTab.id)}
-            >
-              {translate(
-                'auto.components.tab.group.TabGroupPanel.closeGitGraph',
-                'Close Git Graph'
-              )}
-            </Button>
-          </div>
+          <GitGraphWebUnsupported onClose={() => commands.closeItem(activeTab.id)} />
         )}
         {activeTab?.contentType === 'git-graph' && !isWebClientLocation() && (
           <div className="absolute inset-0 flex min-h-0 min-w-0">
