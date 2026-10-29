@@ -5,6 +5,12 @@ import {
   shortGitHash
 } from './git-history-log-parser'
 import {
+  clampGitHistorySkip,
+  gitHistoryScopeForOptions,
+  normalizeGitHistoryRefFilter,
+  normalizeGitHistorySearch
+} from './git-history-options'
+import {
   GIT_HISTORY_DEFAULT_LIMIT,
   GIT_HISTORY_MAX_LIMIT,
   type GitHistoryExecutor,
@@ -21,7 +27,8 @@ export type {
   GitHistoryItemStatistics,
   GitHistoryOptions,
   GitHistoryRefCategory,
-  GitHistoryResult
+  GitHistoryResult,
+  GitHistoryScope
 } from './git-history-types'
 export {
   GIT_HISTORY_BASE_REF_COLOR,
@@ -31,6 +38,14 @@ export {
   GIT_HISTORY_REF_COLOR,
   GIT_HISTORY_REMOTE_REF_COLOR
 } from './git-history-types'
+export {
+  GIT_HISTORY_REF_FILTER_PATTERN,
+  clampGitHistorySkip,
+  gitHistoryScopeForOptions,
+  normalizeGitHistoryRefFilter,
+  normalizeGitHistorySearch,
+  pickGitHistoryOptions
+} from './git-history-options'
 export { compareGitHistoryItemRefsByCategory, parseGitHistoryLog } from './git-history-log-parser'
 
 function clampHistoryLimit(limit: number | undefined): number {
@@ -41,6 +56,31 @@ function clampHistoryLimit(limit: number | undefined): number {
     GIT_HISTORY_MAX_LIMIT,
     Math.max(1, Math.trunc(limit ?? GIT_HISTORY_DEFAULT_LIMIT))
   )
+}
+
+function buildHistoryLogArgs(
+  limit: number,
+  skip: number,
+  search: string | undefined,
+  revisions: string[]
+): string[] {
+  const args = [
+    'log',
+    '--no-show-signature',
+    '--no-color',
+    `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
+    '-z',
+    '--topo-order',
+    '--decorate=full'
+  ]
+  if (search) {
+    args.push('--fixed-strings', '--regexp-ignore-case', `--grep=${search}`)
+  }
+  if (skip > 0) {
+    args.push(`--skip=${skip}`)
+  }
+  args.push(`-n${limit + 1}`, ...revisions)
+  return args
 }
 
 async function resolveCommit(
@@ -166,6 +206,10 @@ export async function loadGitHistoryFromExecutor(
   options: GitHistoryOptions = {}
 ): Promise<GitHistoryResult> {
   const limit = clampHistoryLimit(options.limit)
+  const skip = clampGitHistorySkip(options.skip)
+  const scope = gitHistoryScopeForOptions(options)
+  const search = normalizeGitHistorySearch(options.search)
+  const refFilter = normalizeGitHistoryRefFilter(options.refFilter)
   const headOid = await resolveCommit(git, cwd, 'HEAD')
   if (!headOid) {
     return {
@@ -173,11 +217,30 @@ export async function loadGitHistoryFromExecutor(
       hasIncomingChanges: false,
       hasOutgoingChanges: false,
       hasMore: false,
-      limit
+      limit,
+      scope,
+      skip
     }
   }
 
   const { currentRef, branchName } = await resolveCurrentRef(git, cwd, headOid)
+
+  if (scope === 'all-refs') {
+    const revisions = refFilter ?? ['--branches', '--remotes', '--tags', 'HEAD']
+    const { stdout } = await git(buildHistoryLogArgs(limit, skip, search, revisions), cwd)
+    const parsed = parseGitHistoryLog(stdout)
+    return {
+      items: parsed.slice(0, limit),
+      currentRef,
+      hasIncomingChanges: false,
+      hasOutgoingChanges: false,
+      hasMore: parsed.length > limit,
+      limit,
+      scope,
+      skip
+    }
+  }
+
   const [remoteRef, rawBaseRef] = await Promise.all([
     resolveUpstreamRef(git, cwd, branchName),
     resolveNamedRef(git, cwd, options.baseRef)
@@ -201,20 +264,7 @@ export async function loadGitHistoryFromExecutor(
     }
   }
 
-  const { stdout } = await git(
-    [
-      'log',
-      '--no-show-signature',
-      '--no-color',
-      `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
-      '-z',
-      '--topo-order',
-      '--decorate=full',
-      `-n${limit + 1}`,
-      ...historyRevisions
-    ],
-    cwd
-  )
+  const { stdout } = await git(buildHistoryLogArgs(limit, skip, search, historyRevisions), cwd)
   const parsed = parseGitHistoryLog(stdout)
   const items = parsed.slice(0, limit)
   const hasIncomingChanges =
@@ -232,6 +282,8 @@ export async function loadGitHistoryFromExecutor(
     hasIncomingChanges,
     hasOutgoingChanges,
     hasMore: parsed.length > limit,
-    limit
+    limit,
+    scope,
+    skip
   }
 }

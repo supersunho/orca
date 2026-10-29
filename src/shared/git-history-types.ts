@@ -21,9 +21,11 @@ export const GIT_HISTORY_LANE_COLORS: readonly GitHistoryGraphColorId[] = [
 ]
 
 export const GIT_HISTORY_DEFAULT_LIMIT = 50
-export const GIT_HISTORY_MAX_LIMIT = 200
+export const GIT_HISTORY_MAX_LIMIT = 5000
 
 export type GitHistoryRefCategory = 'branches' | 'remote branches' | 'tags' | 'commits'
+
+export type GitHistoryScope = 'head' | 'all-refs'
 
 export type GitHistoryItemRef = {
   id: string
@@ -56,7 +58,15 @@ export type GitHistoryItem = {
 
 export type GitHistoryOptions = {
   limit?: number
+  /** Commits to skip before the returned window. Used for incremental loading. */
+  skip?: number
   baseRef?: string | null
+  /** Query every branch, remote-tracking branch and tag instead of HEAD only. */
+  allRefs?: boolean
+  /** Literal commit-message search executed by git, not over the loaded window. */
+  search?: string | null
+  /** Full ref names to include. Empty/absent means the default scope. */
+  refFilter?: string[] | null
 }
 
 export type GitHistoryResult = {
@@ -69,6 +79,9 @@ export type GitHistoryResult = {
   hasOutgoingChanges: boolean
   hasMore: boolean
   limit: number
+  /** Actual query scope. Missing means an older runtime returned HEAD-only data. */
+  scope?: GitHistoryScope
+  skip?: number
 }
 
 export type GitHistoryExecutor = (

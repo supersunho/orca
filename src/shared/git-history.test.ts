@@ -202,6 +202,8 @@ describe('git history loader', () => {
     expect(result.hasIncomingChanges).toBe(true)
     expect(result.hasOutgoingChanges).toBe(true)
     expect(result.mergeBase).toBe(BASE_OID)
+    expect(result.scope).toBe('head')
+    expect(result.skip).toBe(0)
   })
 
   it('does not list newly fetched upstream commits in old workspace history', async () => {
@@ -277,7 +279,9 @@ describe('git history loader', () => {
   it('clamps oversized limits before shelling out to git log', async () => {
     const { executor, calls } = createHistoryExecutor(GIT_HISTORY_MAX_LIMIT + 1)
 
-    const result = await loadGitHistoryFromExecutor(executor, '/repo', { limit: 500 })
+    const result = await loadGitHistoryFromExecutor(executor, '/repo', {
+      limit: GIT_HISTORY_MAX_LIMIT + 1
+    })
 
     const logCall = calls.find((args) => args[0] === 'log')
     expect(logCall).toContain(`-n${GIT_HISTORY_MAX_LIMIT + 1}`)
@@ -303,6 +307,79 @@ describe('git history loader', () => {
       hasMore: false
     })
     expect(executor).toHaveBeenCalledTimes(1)
+  })
+
+  it('queries every ref and skips upstream comparison in all-refs mode', async () => {
+    const { executor, calls } = createHistoryExecutor()
+
+    const result = await loadGitHistoryFromExecutor(executor, '/repo', {
+      allRefs: true,
+      limit: 50
+    })
+
+    const logCall = calls.find((args) => args[0] === 'log')
+    expect(logCall).toEqual(
+      expect.arrayContaining(['--branches', '--remotes', '--tags', 'HEAD', '-n51'])
+    )
+    expect(logCall).not.toContain(HEAD_OID)
+    expect(calls.some((args) => args[0] === 'for-each-ref')).toBe(false)
+    expect(calls.some((args) => args[0] === 'merge-base')).toBe(false)
+    expect(result.scope).toBe('all-refs')
+    expect(result.hasIncomingChanges).toBe(false)
+    expect(result.hasOutgoingChanges).toBe(false)
+  })
+
+  it('pages with skip and reports the window offset', async () => {
+    const { executor, calls } = createHistoryExecutor()
+
+    const result = await loadGitHistoryFromExecutor(executor, '/repo', {
+      skip: 100,
+      limit: 50
+    })
+
+    const logCall = calls.find((args) => args[0] === 'log')
+    expect(logCall).toContain('--skip=100')
+    expect(result.skip).toBe(100)
+  })
+
+  it('runs literal message search inside git', async () => {
+    const { executor, calls } = createHistoryExecutor()
+
+    await loadGitHistoryFromExecutor(executor, '/repo', {
+      allRefs: true,
+      search: 'fix: parser'
+    })
+
+    const logCall = calls.find((args) => args[0] === 'log')
+    expect(logCall).toEqual(
+      expect.arrayContaining(['--fixed-strings', '--regexp-ignore-case', '--grep=fix: parser'])
+    )
+  })
+
+  it('uses selected full refs instead of the default all-refs set', async () => {
+    const { executor, calls } = createHistoryExecutor()
+
+    await loadGitHistoryFromExecutor(executor, '/repo', {
+      allRefs: true,
+      refFilter: ['refs/heads/feature', 'refs/tags/v1.0.0']
+    })
+
+    const logCall = calls.find((args) => args[0] === 'log')
+    expect(logCall).toEqual(expect.arrayContaining(['refs/heads/feature', 'refs/tags/v1.0.0']))
+    expect(logCall).not.toContain('--branches')
+  })
+
+  it('drops short and option-like ref filter entries', async () => {
+    const { executor, calls } = createHistoryExecutor()
+
+    await loadGitHistoryFromExecutor(executor, '/repo', {
+      allRefs: true,
+      refFilter: ['feature', '--all']
+    })
+
+    const logCall = calls.find((args) => args[0] === 'log')
+    expect(logCall).toContain('--branches')
+    expect(logCall).not.toContain('--all')
   })
 })
 

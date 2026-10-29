@@ -44,6 +44,17 @@ export type GitCommitCompareResult = {
   entries: GitBranchChangeEntry[]
 }
 
+export type GitCommitRangeCompareResult = {
+  summary: {
+    baseOid: string
+    headOid: string
+    changedFiles: number
+    status: 'ready' | 'error'
+    errorMessage?: string
+  }
+  entries: GitBranchChangeEntry[]
+}
+
 export type GitDiffTextResult = {
   kind: 'text'
   originalContent: string

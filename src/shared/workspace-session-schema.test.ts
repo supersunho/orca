@@ -792,4 +792,35 @@ describe('parseWorkspaceSession', () => {
       expect(page?.remoteBrowserPageClientHosted).toBeUndefined()
     }
   })
+
+  it('accepts a git-graph unified tab', () => {
+    const result = parseWorkspaceSession({
+      activeRepoId: null,
+      activeWorktreeId: 'wt',
+      activeTabId: 'graph1',
+      tabsByWorktree: {},
+      terminalLayoutsByTabId: {},
+      unifiedTabs: {
+        wt: [
+          {
+            id: 'graph1',
+            entityId: 'graph1',
+            groupId: 'group1',
+            worktreeId: 'wt',
+            contentType: 'git-graph',
+            label: 'Git Graph',
+            customLabel: null,
+            color: null,
+            sortOrder: 0,
+            createdAt: 0
+          }
+        ]
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.unifiedTabs?.wt[0]?.contentType).toBe('git-graph')
+    }
+  })
 })

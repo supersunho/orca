@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { OptionalGitAdmissionTier } from './git-admission-tier-params'
+import { GitGraphActionSchema } from './git-graph-action-params'
 import { OptionalTuiAgent } from './worktree-params'
 
 export const WorktreeSelector = z.object({
@@ -74,9 +75,28 @@ export const GitCommitCompare = WorktreeSelector.extend({
     .pipe(FullGitObjectId)
 })
 
+export const GitCommitRangeCompare = WorktreeSelector.extend({
+  baseOid: FullGitObjectId,
+  headOid: FullGitObjectId
+})
+
 export const GitHistory = WorktreeSelector.extend({
-  limit: z.number().int().min(1).max(200).optional(),
-  baseRef: z.string().nullable().optional()
+  limit: z.number().int().min(1).max(5000).optional(),
+  skip: z.number().int().min(0).max(10_000_000).optional(),
+  baseRef: z.string().nullable().optional(),
+  allRefs: z.boolean().optional(),
+  search: z.string().max(500).nullable().optional(),
+  refFilter: z
+    .array(
+      z
+        .string()
+        .max(1024)
+        // eslint-disable-next-line no-control-regex -- Reject control characters before they reach git.
+        .regex(/^refs\/(?:heads|remotes|tags)\/[^\s\x00-\x1f]+$/)
+    )
+    .max(200)
+    .nullable()
+    .optional()
 })
 
 export const GitBranchDiff = GitFilePath.extend({
@@ -260,7 +280,9 @@ export const GitCheckout = WorktreeSelector.extend({
         .refine((value) => !value.startsWith('-'), 'Branch must not start with -')
     )
 })
-
+export const GitGraphActionParams = WorktreeSelector.extend({
+  action: GitGraphActionSchema
+}).strict()
 export const GitRemoteFileUrl = WorktreeSelector.extend({
   relativePath: z
     .unknown()

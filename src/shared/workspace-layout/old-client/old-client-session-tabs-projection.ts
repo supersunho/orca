@@ -160,6 +160,9 @@ function projectTab(tab: LayoutTab, scope: Scope): RuntimeMobileSessionSnapshotT
     // A simulator needs the desktop to draw it; the window lists none either.
     case 'simulator':
       return []
+    // Git Graph is desktop-only in Tier C; the mobile/web session keeps the tab but lists no row.
+    case 'git-graph':
+      return []
   }
 }
 

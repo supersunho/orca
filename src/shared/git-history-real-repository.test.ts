@@ -149,4 +149,27 @@ describe('real unrelated Git histories', () => {
       expect(truncated.items).toHaveLength(2)
     }
   )
+
+  it('finds commits reachable only from another branch or tag in all-refs mode', async () => {
+    const { repo, git } = await createRepository()
+    await git(['checkout', 'first'])
+    await git(['commit', '--quiet', '--allow-empty', '-m', 'C'], repo, '2000-01-04T00:00:00Z')
+    await git(['tag', 'v1.0.0', 'first'])
+    await git(['checkout', 'unrelated'])
+
+    const headOnly = await loadGitHistoryFromExecutor(git, repo, { limit: 10 })
+    expect(headOnly.scope).toBe('head')
+    expect(headOnly.items.map((item) => item.subject)).not.toContain('C')
+
+    const allRefs = await loadGitHistoryFromExecutor(git, repo, {
+      allRefs: true,
+      limit: 10
+    })
+    expect(allRefs.scope).toBe('all-refs')
+    expect(allRefs.items.map((item) => item.subject)).toEqual(
+      expect.arrayContaining(['A', 'B', 'C', 'V'])
+    )
+    const tagged = allRefs.items.find((item) => item.subject === 'C')
+    expect(tagged?.references?.some((ref) => ref.name === 'v1.0.0')).toBe(true)
+  })
 })
