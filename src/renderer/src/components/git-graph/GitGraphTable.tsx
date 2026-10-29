@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type {
   GitHistoryItem,
@@ -95,6 +95,7 @@ export function GitGraphTable({
 }): React.JSX.Element {
   const tableRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const pendingFocusIndexRef = useRef<number | null>(null)
   const [tableWidth, setTableWidth] = useState<number | null>(null)
   const [resize, setResize] = useState<ColumnResize | null>(null)
   const measuredRef = useMeasuredWidth(setTableWidth)
@@ -258,20 +259,32 @@ export function GitGraphTable({
       virtualizer.scrollToIndex(nextEntryIndex, { align: 'auto' })
     }
     const nextRowSelector = `[data-git-graph-model-index="${nextIndex}"] [data-testid="git-graph-row"]`
-    const focusRow = (): void => {
-      tableRef.current?.querySelector<HTMLElement>(nextRowSelector)?.focus()
-    }
     const mountedRow = tableRef.current?.querySelector<HTMLElement>(nextRowSelector)
     if (mountedRow) {
       mountedRow.focus()
+      pendingFocusIndexRef.current = null
     } else {
-      requestAnimationFrame(focusRow)
+      pendingFocusIndexRef.current = nextIndex
     }
     const destination = viewModels[nextIndex]
     if (destination) {
       onNavigate(destination.historyItem)
     }
   }
+
+  useEffect(() => {
+    const pendingIndex = pendingFocusIndexRef.current
+    if (pendingIndex === null) {
+      return
+    }
+    const row = tableRef.current?.querySelector<HTMLElement>(
+      `[data-git-graph-model-index="${pendingIndex}"] [data-testid="git-graph-row"]`
+    )
+    if (row) {
+      row.focus()
+      pendingFocusIndexRef.current = null
+    }
+  })
 
   const renderEntry = (entry: GitGraphTableEntry): React.JSX.Element | null => {
     switch (entry.kind) {

@@ -27,6 +27,21 @@ describe('findWebGitGraphFallbackTab', () => {
     expect(findWebGitGraphFallbackTab([graph])).toBeNull()
   })
 
+  it('does not require a terminal for a graph-only group', () => {
+    const commands = {
+      activateTerminal: vi.fn(),
+      activateAgentSession: vi.fn(),
+      activateEditor: vi.fn(),
+      activateBrowser: vi.fn()
+    }
+    renderHook(() => useWebGitGraphFallback({ active: true, tabs: [graph], commands }))
+
+    expect(commands.activateTerminal).not.toHaveBeenCalled()
+    expect(commands.activateAgentSession).not.toHaveBeenCalled()
+    expect(commands.activateEditor).not.toHaveBeenCalled()
+    expect(commands.activateBrowser).not.toHaveBeenCalled()
+  })
+
   it('activates a supported fallback once and leaves graph-only groups alone', () => {
     const commands = {
       activateTerminal: vi.fn(),
