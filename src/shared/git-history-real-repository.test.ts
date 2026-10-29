@@ -150,6 +150,35 @@ describe('real unrelated Git histories', () => {
     }
   )
 
+  it('loads HEAD history from a detached HEAD', async () => {
+    const { repo, git } = await createRepository()
+    await git(['checkout', '--detach', 'first', '--quiet'])
+
+    const history = await loadGitHistoryFromExecutor(git, repo, { limit: 10 })
+
+    expect(history.scope).toBe('head')
+    expect(history.items.map((item) => item.subject)).toEqual(expect.arrayContaining(['A', 'B']))
+    expect(history.items.map((item) => item.subject)).not.toContain('V')
+  })
+
+  it('loads all-refs history from a linked worktree', async () => {
+    const { repo, git } = await createRepository()
+    const linkedRoot = await mkdtemp(join(tmpdir(), 'orca-history-linked-'))
+    repositories.push(linkedRoot)
+    const linked = join(linkedRoot, 'worktree')
+    await git(['worktree', 'add', '--quiet', '-b', 'linked', linked, 'first'], repo)
+
+    const history = await loadGitHistoryFromExecutor(git, linked, {
+      allRefs: true,
+      limit: 10
+    })
+
+    expect(history.scope).toBe('all-refs')
+    expect(history.items.map((item) => item.subject)).toEqual(
+      expect.arrayContaining(['A', 'B', 'V'])
+    )
+  })
+
   it('finds commits reachable only from another branch or tag in all-refs mode', async () => {
     const { repo, git } = await createRepository()
     await git(['checkout', 'first'])
