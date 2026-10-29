@@ -211,6 +211,9 @@ export function prepareWebSessionTabsSnapshotBrowser(
         !mirroredEditorHostTabIds.has(tab.id)
       )
     }
+    if (tab.contentType === 'git-graph') {
+      return false
+    }
     if (tab.contentType !== 'terminal') {
       return true
     }

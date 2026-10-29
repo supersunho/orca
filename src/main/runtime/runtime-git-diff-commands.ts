@@ -1,6 +1,7 @@
 import type {
   GitBranchCompareResult,
   GitCommitCompareResult,
+  GitCommitRangeCompareResult,
   GitDiffResult
 } from '../../shared/git-diff-compare-types'
 import { assertGitDiffWithinTransportBudget } from '../../shared/git-diff-transport-budget'
@@ -56,6 +57,19 @@ export class RuntimeGitDiffCommands {
   ): Promise<GitCommitCompareResult> {
     const target = await this.host.resolveRuntimeGitTarget(worktreeSelector)
     return requireRuntimeGitProvider(target).getCommitCompare(target.worktree.path, commitId)
+  }
+
+  async getRuntimeGitCommitRangeCompare(
+    worktreeSelector: string,
+    baseOid: string,
+    headOid: string
+  ): Promise<GitCommitRangeCompareResult> {
+    const target = await this.host.resolveRuntimeGitTarget(worktreeSelector)
+    return requireRuntimeGitProvider(target).getCommitRangeCompare(
+      target.worktree.path,
+      baseOid,
+      headOid
+    )
   }
 
   async getRuntimeGitBranchDiff(

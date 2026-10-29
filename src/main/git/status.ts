@@ -28,7 +28,7 @@ export { resolveGitDir } from './source-control/resolve-git-dir'
 export { getDiff } from './source-control/file-diff'
 export { getBranchCompare } from './source-control/branch-compare'
 export { getBranchDiff } from './source-control/branch-diff'
-export { getCommitCompare } from './source-control/commit-compare'
+export { getCommitCompare, getCommitRangeCompare } from './source-control/commit-compare'
 export { getCommitDiff } from './source-control/commit-diff'
 export {
   bulkStageFiles,

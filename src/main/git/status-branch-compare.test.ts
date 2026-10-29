@@ -51,7 +51,7 @@ vi.mock('../../shared/node-bounded-file-reader', async (importOriginal) =>
   })
 )
 
-import { getBranchCompare, getCommitCompare } from './status'
+import { getBranchCompare, getCommitCompare, getCommitRangeCompare } from './status'
 
 describe('getBranchCompare', () => {
   beforeEach(() => {
@@ -508,5 +508,37 @@ describe('getCommitCompare', () => {
     expect(result.entries).toEqual([
       { path: 'docs/a => b.txt', status: 'modified', added: 1, removed: 0 }
     ])
+  })
+})
+
+describe('getCommitRangeCompare', () => {
+  beforeEach(() => {
+    gitExecFileAsyncMock.mockReset()
+    gitExecFileAsyncBufferMock.mockReset()
+  })
+
+  it('compares arbitrary base and head object ids', async () => {
+    gitExecFileAsyncMock.mockImplementation((args: string[]) => {
+      if (args.includes('--raw')) {
+        return Promise.resolve({
+          stdout: ':100644 100644 a b M\0src/a.ts\0' + '2\t1\tsrc/a.ts\0'
+        })
+      }
+      throw new Error(`unexpected git args: ${args.join(' ')}`)
+    })
+
+    const result = await getCommitRangeCompare('/repo', 'base-oid', 'head-oid')
+
+    expect(gitExecFileAsyncMock).toHaveBeenCalledWith(
+      ['diff', '--raw', '--numstat', '-z', '-M', '-C', 'base-oid', 'head-oid', '--'],
+      expect.objectContaining({ cwd: '/repo' })
+    )
+    expect(result.summary).toMatchObject({
+      baseOid: 'base-oid',
+      headOid: 'head-oid',
+      changedFiles: 1,
+      status: 'ready'
+    })
+    expect(result.entries).toEqual([{ path: 'src/a.ts', status: 'modified', added: 2, removed: 1 }])
   })
 })

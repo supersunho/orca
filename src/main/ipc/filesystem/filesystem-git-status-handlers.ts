@@ -5,7 +5,11 @@ import type {
   GitStatusResult
 } from '../../../shared/git-status-types'
 import type { GitDiffResult } from '../../../shared/git-diff-compare-types'
-import type { GitHistoryOptions, GitHistoryResult } from '../../../shared/git-history'
+import {
+  pickGitHistoryOptions,
+  type GitHistoryOptions,
+  type GitHistoryResult
+} from '../../../shared/git-history'
 import type { GitStatusUpstreamRefWatchRequest } from '../git-status-upstream-ref-watch-request'
 import type { GitAdmissionTier } from '../../git/command-runner/git-exec-options'
 import {
@@ -193,7 +197,7 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
       _event,
       args: { worktreePath: string; connectionId?: string } & GitHistoryOptions
     ): Promise<GitHistoryResult> => {
-      const options: GitHistoryOptions = { limit: args.limit, baseRef: args.baseRef }
+      const options = pickGitHistoryOptions(args)
       requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
       const worktreePath = await resolveRegisteredWorktreePath(args.worktreePath, store)
       const gitOptions = getLocalGitOptionsForRegisteredWorktree(

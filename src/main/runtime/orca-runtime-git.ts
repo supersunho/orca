@@ -1,5 +1,6 @@
 import { RuntimeGitDiffCommands } from './runtime-git-diff-commands'
 import { RuntimeGitGenerationCommands } from './runtime-git-generation-commands'
+import { RuntimeGitGraphCommands } from './runtime-git-graph-commands'
 import { RuntimeGitStagingCommands } from './runtime-git-staging-commands'
 import { RuntimeGitStatusCommands } from './runtime-git-status-commands'
 import { RuntimeGitSyncCommands } from './runtime-git-sync-commands'
@@ -17,6 +18,9 @@ export class RuntimeGitCommands {
   readonly getRuntimeGitDiff: RuntimeGitDiffCommands['getRuntimeGitDiff']
   readonly getRuntimeGitBranchCompare: RuntimeGitDiffCommands['getRuntimeGitBranchCompare']
   readonly getRuntimeGitCommitCompare: RuntimeGitDiffCommands['getRuntimeGitCommitCompare']
+  readonly getRuntimeGitCommitRangeCompare: RuntimeGitDiffCommands['getRuntimeGitCommitRangeCompare']
+  readonly runRuntimeGitGraphAction: RuntimeGitGraphCommands['runRuntimeGitGraphAction']
+  readonly listRuntimeGitGraphAuxRefs: RuntimeGitGraphCommands['listRuntimeGitGraphAuxRefs']
   readonly getRuntimeGitBranchDiff: RuntimeGitDiffCommands['getRuntimeGitBranchDiff']
   readonly getRuntimeGitCommitDiff: RuntimeGitDiffCommands['getRuntimeGitCommitDiff']
   readonly getRuntimeGitRemoteFileUrl: RuntimeGitDiffCommands['getRuntimeGitRemoteFileUrl']
@@ -49,6 +53,7 @@ export class RuntimeGitCommands {
     const sync = new RuntimeGitSyncCommands(host)
     const generation = new RuntimeGitGenerationCommands(host)
     const staging = new RuntimeGitStagingCommands(host)
+    const graph = new RuntimeGitGraphCommands(host)
 
     this.getRuntimeGitStatus = status.getRuntimeGitStatus.bind(status)
     this.getRuntimeGitSubmoduleStatus = status.getRuntimeGitSubmoduleStatus.bind(status)
@@ -61,6 +66,9 @@ export class RuntimeGitCommands {
     this.getRuntimeGitDiff = diff.getRuntimeGitDiff.bind(diff)
     this.getRuntimeGitBranchCompare = diff.getRuntimeGitBranchCompare.bind(diff)
     this.getRuntimeGitCommitCompare = diff.getRuntimeGitCommitCompare.bind(diff)
+    this.getRuntimeGitCommitRangeCompare = diff.getRuntimeGitCommitRangeCompare.bind(diff)
+    this.runRuntimeGitGraphAction = graph.runRuntimeGitGraphAction.bind(graph)
+    this.listRuntimeGitGraphAuxRefs = graph.listRuntimeGitGraphAuxRefs.bind(graph)
     this.getRuntimeGitBranchDiff = diff.getRuntimeGitBranchDiff.bind(diff)
     this.getRuntimeGitCommitDiff = diff.getRuntimeGitCommitDiff.bind(diff)
     this.getRuntimeGitRemoteFileUrl = diff.getRuntimeGitRemoteFileUrl.bind(diff)

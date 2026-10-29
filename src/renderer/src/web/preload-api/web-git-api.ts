@@ -1,3 +1,6 @@
+/* eslint-disable max-lines -- Why: the web git shim mirrors the desktop API in one transport surface. */
+import { pickGitHistoryOptions } from '../../../../shared/git-history'
+import type { GitGraphActionResult, GitGraphAuxRefs } from '../../../../shared/git-graph-actions'
 import type { PreloadApi } from '../../../../preload/api-types'
 import { callAbortableRuntimeEnvironment } from '../../runtime/abortable-runtime-environment-call'
 import { toRuntimeWorktreeSelector } from '../../runtime/runtime-worktree-selector'
@@ -89,12 +92,11 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
     // Why: the "add huge folder to .gitignore" flow is desktop-only; the web runtime makes no offer, so return no candidates.
     findHugeFoldersToIgnore: async () => [],
     appendGitignore: async () => false,
-    history: async ({ worktreePath, limit, baseRef }) => {
+    history: async ({ worktreePath, ...options }) => {
       const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
       return callRuntimeResult('git.history', {
         worktree: toRuntimeWorktreeSelector(worktree.id),
-        limit,
-        baseRef
+        ...pickGitHistoryOptions(options)
       })
     },
     mutationInFlight: async ({ worktreePath }) => {
@@ -143,6 +145,27 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
       return callRuntimeResult('git.commitCompare', {
         worktree: toRuntimeWorktreeSelector(worktree.id),
         commitId
+      })
+    },
+    commitRangeCompare: async ({ worktreePath, baseOid, headOid }) => {
+      const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
+      return callRuntimeResult('git.commitRangeCompare', {
+        worktree: toRuntimeWorktreeSelector(worktree.id),
+        baseOid,
+        headOid
+      })
+    },
+    graphAction: async ({ worktreePath, action }) => {
+      const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
+      return callRuntimeResult<GitGraphActionResult>('git.graphAction', {
+        worktree: toRuntimeWorktreeSelector(worktree.id),
+        action
+      })
+    },
+    graphAuxRefs: async ({ worktreePath }) => {
+      const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
+      return callRuntimeResult<GitGraphAuxRefs>('git.graphAuxRefs', {
+        worktree: toRuntimeWorktreeSelector(worktree.id)
       })
     },
     upstreamStatus: async ({ worktreePath, pushTarget }) => {

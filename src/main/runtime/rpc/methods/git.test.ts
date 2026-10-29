@@ -10,6 +10,11 @@ function makeRequest(method: string, params?: unknown): RpcRequest {
   return { id: 'req-1', authToken: 'tok', method, params }
 }
 
+function makeRuntime(overrides: Record<string, unknown>): OrcaRuntimeService {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: test double exposes only the method under test; the dispatcher never touches other services.
+  return { getRuntimeId: () => 'test-runtime', ...overrides } as unknown as OrcaRuntimeService
+}
+
 describe('git RPC methods', () => {
   it('returns status for a selected worktree', async () => {
     const runtime = {
@@ -235,13 +240,21 @@ describe('git RPC methods', () => {
       makeRequest('git.history', {
         worktree: 'id:wt-1',
         limit: 25,
-        baseRef: 'origin/main'
+        skip: 100,
+        baseRef: 'origin/main',
+        allRefs: true,
+        search: 'fix',
+        refFilter: ['refs/heads/main']
       })
     )
 
     expect(runtime.getRuntimeGitHistory).toHaveBeenCalledWith('id:wt-1', {
       limit: 25,
-      baseRef: 'origin/main'
+      skip: 100,
+      baseRef: 'origin/main',
+      allRefs: true,
+      search: 'fix',
+      refFilter: ['refs/heads/main']
     })
     expect(response).toMatchObject({ ok: true, result: history })
   })
@@ -773,7 +786,7 @@ describe('git RPC methods', () => {
     const response = await dispatcher.dispatch(
       makeRequest('git.history', {
         worktree: 'id:wt-1',
-        limit: 201
+        limit: 5001
       })
     )
 
@@ -809,6 +822,63 @@ describe('git RPC methods', () => {
 
     expect(response.ok).toBe(false)
     expect(runtime.checkoutRuntimeGitBranch).not.toHaveBeenCalled()
+  })
+
+  it('runs a graph action through the runtime surface', async () => {
+    const runtime = makeRuntime({
+      runRuntimeGitGraphAction: vi.fn().mockResolvedValue({
+        ok: true,
+        backupRef: 'refs/orca/backup/1-main'
+      })
+    })
+    const dispatcher = new RpcDispatcher({ runtime, methods: GIT_METHODS })
+    const action = {
+      kind: 'merge',
+      target: 'main',
+      noFastForward: false,
+      squash: false,
+      noCommit: false
+    }
+
+    const response = await dispatcher.dispatch(
+      makeRequest('git.graphAction', { worktree: 'id:wt-1', action })
+    )
+
+    expect(runtime.runRuntimeGitGraphAction).toHaveBeenCalledWith('id:wt-1', action)
+    expect(response).toMatchObject({
+      ok: true,
+      result: { ok: true, backupRef: 'refs/orca/backup/1-main' }
+    })
+  })
+
+  it('rejects graph action input that could be parsed as a git flag', async () => {
+    const runtime = makeRuntime({ runRuntimeGitGraphAction: vi.fn() })
+    const dispatcher = new RpcDispatcher({ runtime, methods: GIT_METHODS })
+
+    const response = await dispatcher.dispatch(
+      makeRequest('git.graphAction', {
+        worktree: 'id:wt-1',
+        action: { kind: 'checkout', branch: '--force' }
+      })
+    )
+
+    expect(response.ok).toBe(false)
+    expect(runtime.runRuntimeGitGraphAction).not.toHaveBeenCalled()
+  })
+
+  it('rejects graph action payloads with unknown fields', async () => {
+    const runtime = makeRuntime({ runRuntimeGitGraphAction: vi.fn() })
+    const dispatcher = new RpcDispatcher({ runtime, methods: GIT_METHODS })
+
+    const response = await dispatcher.dispatch(
+      makeRequest('git.graphAction', {
+        worktree: 'id:wt-1',
+        action: { kind: 'checkout', branch: 'feature', extra: true }
+      })
+    )
+
+    expect(response.ok).toBe(false)
+    expect(runtime.runRuntimeGitGraphAction).not.toHaveBeenCalled()
   })
 
   it('lists local branches', async () => {

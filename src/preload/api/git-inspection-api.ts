@@ -1,6 +1,7 @@
 import type {
   GitBranchCompareResult,
   GitCommitCompareResult,
+  GitCommitRangeCompareResult,
   GitDiffResult
 } from '../../shared/git-diff-compare-types'
 import type { GitMutationInFlight } from '../../shared/git-mutation-in-flight'
@@ -12,6 +13,11 @@ import type {
 } from '../../shared/git-status-types'
 import type { GitPushTarget } from '../../shared/worktree/types'
 import type { GitHistoryOptions, GitHistoryResult } from '../../shared/git-history'
+import type {
+  GitGraphAction,
+  GitGraphActionResult,
+  GitGraphAuxRefs
+} from '../../shared/git-graph-actions'
 import type {
   CommitMessageAgentCapability,
   CommitMessageModelCapability
@@ -82,6 +88,18 @@ export type GitInspectionApi = {
     commitId: string
     connectionId?: string
   }) => Promise<GitCommitCompareResult>
+  commitRangeCompare: (args: {
+    worktreePath: string
+    baseOid: string
+    headOid: string
+    connectionId?: string
+  }) => Promise<GitCommitRangeCompareResult>
+  graphAction: (args: {
+    worktreePath: string
+    action: GitGraphAction
+    connectionId?: string
+  }) => Promise<GitGraphActionResult>
+  graphAuxRefs: (args: { worktreePath: string; connectionId?: string }) => Promise<GitGraphAuxRefs>
   upstreamStatus: (args: {
     worktreePath: string
     connectionId?: string

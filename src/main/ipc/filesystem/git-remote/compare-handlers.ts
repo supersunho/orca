@@ -1,9 +1,10 @@
 import { ipcMain } from 'electron'
 import type {
   GitBranchCompareResult,
-  GitCommitCompareResult
+  GitCommitCompareResult,
+  GitCommitRangeCompareResult
 } from '../../../../shared/git-diff-compare-types'
-import { getBranchCompare, getCommitCompare } from '../../../git/status'
+import { getBranchCompare, getCommitCompare, getCommitRangeCompare } from '../../../git/status'
 import { resolveRegisteredWorktreePath } from '../../registered-worktree-roots-cache'
 import { getLocalGitOptionsForRegisteredWorktree } from '../../local-worktree-runtime-options'
 import { validateFullGitObjectId } from '../filesystem-path-containment'
@@ -59,6 +60,25 @@ export function registerGitRemoteCompareHandlers(context: FilesystemHandlerConte
         worktreePath
       )
       return getCommitCompare(worktreePath, commitId, gitOptions)
+    }
+  )
+
+  ipcMain.handle(
+    'git:commitRangeCompare',
+    async (
+      _event,
+      args: { worktreePath: string; baseOid: string; headOid: string; connectionId?: string }
+    ): Promise<GitCommitRangeCompareResult> => {
+      const baseOid = validateFullGitObjectId(args.baseOid, 'baseOid')
+      const headOid = validateFullGitObjectId(args.headOid, 'headOid')
+      requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
+      const worktreePath = await resolveRegisteredWorktreePath(args.worktreePath, store)
+      const gitOptions = getLocalGitOptionsForRegisteredWorktree(
+        store,
+        args.worktreePath,
+        worktreePath
+      )
+      return getCommitRangeCompare(worktreePath, baseOid, headOid, gitOptions)
     }
   )
 }

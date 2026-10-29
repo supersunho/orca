@@ -6,10 +6,17 @@ export type GitRuntimeOptions = {
   admissionTier?: GitAdmissionTier
 }
 
+export type WorktreeGitExecOptions = {
+  cwd: string
+  wslDistro?: string
+  signal?: AbortSignal
+  admissionTier?: GitAdmissionTier
+}
+
 export function gitOptionsForWorktree(
   cwd: string,
   options: GitRuntimeOptions = {}
-): { cwd: string; wslDistro?: string; signal?: AbortSignal; admissionTier?: GitAdmissionTier } {
+): WorktreeGitExecOptions {
   return {
     cwd,
     ...(options.wslDistro ? { wslDistro: options.wslDistro } : {}),
@@ -22,12 +29,6 @@ export function gitOptionsForWorktree(
 export function gitReadOptionsForWorktree(
   cwd: string,
   options: GitRuntimeOptions = {}
-): {
-  cwd: string
-  wslDistro?: string
-  signal?: AbortSignal
-  admissionTier?: GitAdmissionTier
-  preferWslDirectGit: true
-} {
+): WorktreeGitExecOptions & { preferWslDirectGit: true } {
   return { ...gitOptionsForWorktree(cwd, options), preferWslDirectGit: true }
 }

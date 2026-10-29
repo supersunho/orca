@@ -1,9 +1,15 @@
 import type {
   GitBranchCompareResult,
   GitCommitCompareResult,
+  GitCommitRangeCompareResult,
   GitDiffResult
 } from '../../shared/git-diff-compare-types'
 import type { GitForkSyncExpectedUpstream, GitForkSyncResult } from '../../shared/git-fork-sync'
+import type {
+  GitGraphAuxRefs,
+  GitGraphAction,
+  GitGraphActionResult
+} from '../../shared/git-graph-actions'
 import type {
   GitConflictOperation,
   GitStagingArea,
@@ -58,6 +64,13 @@ export type IGitProvider = {
     options?: { admissionTier?: GitAdmissionTier }
   ): Promise<GitBranchCompareResult>
   getCommitCompare(worktreePath: string, commitId: string): Promise<GitCommitCompareResult>
+  getCommitRangeCompare(
+    worktreePath: string,
+    baseOid: string,
+    headOid: string
+  ): Promise<GitCommitRangeCompareResult>
+  runGitGraphAction(worktreePath: string, action: GitGraphAction): Promise<GitGraphActionResult>
+  listGraphAuxRefs(worktreePath: string): Promise<GitGraphAuxRefs>
   getUpstreamStatus(worktreePath: string, pushTarget?: GitPushTarget): Promise<GitUpstreamStatus>
   pushBranch(
     worktreePath: string,

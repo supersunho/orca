@@ -1,6 +1,7 @@
 import type {
   GitBranchCompareResult,
   GitCommitCompareResult,
+  GitCommitRangeCompareResult,
   GitDiffResult
 } from '../../../shared/git-diff-compare-types'
 import { resolveLocalWorktreePath, type RuntimeGitContext } from './runtime-git-client-context'
@@ -71,6 +72,28 @@ export async function getRuntimeGitCommitCompare(
     target,
     'git.commitCompare',
     { worktree: toRuntimeWorktreeSelector(context.worktreeId), commitId },
+    { timeoutMs: 15_000 }
+  )
+}
+
+export async function getRuntimeGitCommitRangeCompare(
+  context: RuntimeGitContext,
+  baseOid: string,
+  headOid: string
+): Promise<GitCommitRangeCompareResult> {
+  const target = context.target
+  if (target.kind === 'local' || !context.worktreeId) {
+    return window.api.git.commitRangeCompare({
+      worktreePath: resolveLocalWorktreePath(context),
+      baseOid,
+      headOid,
+      connectionId: context.connectionId
+    })
+  }
+  return callRuntimeRpc<GitCommitRangeCompareResult>(
+    target,
+    'git.commitRangeCompare',
+    { worktree: toRuntimeWorktreeSelector(context.worktreeId), baseOid, headOid },
     { timeoutMs: 15_000 }
   )
 }

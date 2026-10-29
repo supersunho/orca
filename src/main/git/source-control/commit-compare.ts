@@ -1,4 +1,7 @@
-import type { GitCommitCompareResult } from '../../../shared/git-diff-compare-types'
+import type {
+  GitCommitCompareResult,
+  GitCommitRangeCompareResult
+} from '../../../shared/git-diff-compare-types'
 import { parseGitRevListFirstParentOid } from '../../../shared/git-rev-list-output'
 import type { GitRuntimeOptions } from '../git-runtime-options'
 import { gitOptionsForWorktree } from '../git-runtime-options'
@@ -56,6 +59,32 @@ export async function getCommitCompare(
         ...summary,
         status: 'error',
         errorMessage: error instanceof Error ? error.message : 'Failed to load commit diff'
+      },
+      entries: []
+    }
+  }
+}
+
+export async function getCommitRangeCompare(
+  worktreePath: string,
+  baseOid: string,
+  headOid: string,
+  options: GitRuntimeOptions = {}
+): Promise<GitCommitRangeCompareResult> {
+  try {
+    const entries = await loadCommitChanges(worktreePath, baseOid, headOid, options)
+    return {
+      summary: { baseOid, headOid, changedFiles: entries.length, status: 'ready' },
+      entries
+    }
+  } catch (error) {
+    return {
+      summary: {
+        baseOid,
+        headOid,
+        changedFiles: 0,
+        status: 'error',
+        errorMessage: error instanceof Error ? error.message : 'Failed to load commit range diff'
       },
       entries: []
     }

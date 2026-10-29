@@ -1,3 +1,4 @@
+import { pickGitHistoryOptions } from '../../../../shared/git-history'
 import { defineMethod } from '../core'
 import { GIT_COMMIT_MESSAGE_GENERATION_METHODS } from './git-commit-message-generation-methods'
 import { GIT_DIFF_METHODS } from './git-diff-methods'
@@ -9,8 +10,10 @@ import {
   GitCheckout,
   GitCommit,
   GitCommitCompare,
+  GitCommitRangeCompare,
   GitFilePath,
   GitForkSync,
+  GitGraphActionParams,
   GitHistory,
   GitPush,
   GitRebaseFromBase,
@@ -78,10 +81,7 @@ export const GIT_METHODS = [
     permission: 'workspace',
     params: GitHistory,
     handler: async (params, { runtime }) =>
-      runtime.getRuntimeGitHistory(params.worktree, {
-        limit: params.limit,
-        baseRef: params.baseRef
-      })
+      runtime.getRuntimeGitHistory(params.worktree, pickGitHistoryOptions(params))
   }),
   defineMethod({
     name: 'git.conflictOperation',
@@ -115,6 +115,19 @@ export const GIT_METHODS = [
       runtime.checkoutRuntimeGitBranch(params.worktree, params.branch)
   }),
   defineMethod({
+    name: 'git.graphAction',
+    permission: 'workspace',
+    params: GitGraphActionParams,
+    handler: async (params, { runtime }) =>
+      runtime.runRuntimeGitGraphAction(params.worktree, params.action)
+  }),
+  defineMethod({
+    name: 'git.graphAuxRefs',
+    permission: 'workspace',
+    params: WorktreeSelector,
+    handler: async (params, { runtime }) => runtime.listRuntimeGitGraphAuxRefs(params.worktree)
+  }),
+  defineMethod({
     name: 'git.localBranches',
     permission: 'workspace',
     params: WorktreeSelector,
@@ -134,6 +147,13 @@ export const GIT_METHODS = [
     params: GitCommitCompare,
     handler: async (params, { runtime }) =>
       runtime.getRuntimeGitCommitCompare(params.worktree, params.commitId)
+  }),
+  defineMethod({
+    name: 'git.commitRangeCompare',
+    permission: 'workspace',
+    params: GitCommitRangeCompare,
+    handler: async (params, { runtime }) =>
+      runtime.getRuntimeGitCommitRangeCompare(params.worktree, params.baseOid, params.headOid)
   }),
   defineMethod({
     name: 'git.upstreamStatus',
