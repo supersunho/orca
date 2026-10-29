@@ -15,13 +15,16 @@ function git(repo: string, args: string[]): string {
   }).trim()
 }
 
-async function createRepository(): Promise<{ root: string; repo: string }> {
+async function createRepository({ objectFormat }: { objectFormat?: 'sha256' } = {}): Promise<{
+  root: string
+  repo: string
+}> {
   const root = await mkdtemp(path.join(tmpdir(), 'orca-graph-actions-real-'))
   roots.push(root)
   const repo = path.join(root, 'repo')
   const hooks = path.join(root, 'hooks')
   await mkdir(hooks)
-  git(root, ['init', '--quiet', repo])
+  git(root, ['init', '--quiet', ...(objectFormat ? [`--object-format=${objectFormat}`] : []), repo])
   git(repo, ['symbolic-ref', 'HEAD', 'refs/heads/main'])
   git(repo, ['config', 'user.email', 'graph-actions@example.test'])
   git(repo, ['config', 'user.name', 'Graph Actions Test'])
@@ -39,6 +42,28 @@ afterEach(async () => {
 })
 
 describe('runGitGraphAction real git', () => {
+  it('creates a backup ref in a sha256 repository', async () => {
+    const { repo } = await createRepository({ objectFormat: 'sha256' })
+    expect(git(repo, ['rev-parse', '--show-object-format'])).toBe('sha256')
+
+    await writeFile(path.join(repo, 'tracked.txt'), 'second\n')
+    git(repo, ['add', 'tracked.txt'])
+    git(repo, ['commit', '--quiet', '-m', 'second'])
+    const head = git(repo, ['rev-parse', 'HEAD'])
+
+    const result = await runGitGraphAction(repo, {
+      kind: 'reset',
+      target: 'HEAD~1',
+      mode: 'hard'
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok || !result.backupRef) {
+      throw new Error('expected a backup ref')
+    }
+    expect(git(repo, ['rev-parse', `${result.backupRef}^{commit}`])).toBe(head)
+  })
+
   it('creates and deletes branches and tags, and round-trips a stash', async () => {
     const { repo } = await createRepository()
 
