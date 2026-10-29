@@ -73,4 +73,5 @@ export type GitGraphActionResult =
       message: string
       conflict?: GitGraphConflictOperation
       backupRef?: string
+      occupiedWorktree?: string
     }

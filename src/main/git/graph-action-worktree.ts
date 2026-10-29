@@ -177,7 +177,10 @@ export async function runPreflight(
 function occupiedFailure(branch: string, worktree: string): GitGraphActionResult {
   return failure(
     'occupied-branch',
-    `Branch "${branch}" is checked out in another worktree (${worktree}).`
+    `Branch "${branch}" is checked out in another worktree (${worktree}).`,
+    undefined,
+    undefined,
+    worktree
   )
 }
 

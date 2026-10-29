@@ -15,13 +15,15 @@ export function failure(
   code: GitGraphActionFailureCode,
   message: string,
   conflict?: GitGraphConflictOperation,
-  backupRef?: string
+  backupRef?: string,
+  occupiedWorktree?: string
 ): GitGraphActionResult {
   return {
     ok: false,
     code,
     message,
     ...(conflict ? { conflict } : {}),
-    ...(backupRef ? { backupRef } : {})
+    ...(backupRef ? { backupRef } : {}),
+    ...(occupiedWorktree ? { occupiedWorktree } : {})
   }
 }

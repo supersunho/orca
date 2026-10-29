@@ -407,7 +407,11 @@ describe('runGitGraphAction preflight', () => {
       branch: 'release'
     })
 
-    expect(result).toMatchObject({ ok: false, code: 'occupied-branch' })
+    expect(result).toMatchObject({
+      ok: false,
+      code: 'occupied-branch',
+      occupiedWorktree: '/other/worktree'
+    })
     expect(actionCalls()).toEqual([])
   })
 

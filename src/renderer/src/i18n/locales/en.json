@@ -17683,7 +17683,8 @@
           "actions": {
             "noWorktree": "This worktree is not available for Git actions.",
             "completed": "Git action completed.",
-            "completedWithBackup": "Git action completed. Backup: {{value0}}"
+            "completedWithBackup": "Git action completed. Backup: {{value0}}",
+            "openOccupiedWorktree": "Open worktree"
           },
           "sync": {
             "completed": "Git {{value0}} completed.",

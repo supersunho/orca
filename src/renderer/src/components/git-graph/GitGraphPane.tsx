@@ -78,6 +78,7 @@ export default function GitGraphPane({
   const [remoteOpen, setRemoteOpen] = useState(false)
   const [pendingSync, setPendingSync] = useState<'pull' | 'push' | null>(null)
   const [showStashRows, setShowStashRows] = useState(true)
+  const setActiveWorktree = useAppStore((state) => state.setActiveWorktree)
   const openCommitDiff = useAppStore((state) => state.openCommitDiff)
   const openCommitAllDiffs = useAppStore((state) => state.openCommitAllDiffs)
   const openConflictReview = useAppStore((state) => state.openConflictReview)
@@ -88,6 +89,18 @@ export default function GitGraphPane({
     activeRepoTarget: gitOwnerTarget,
     resolveSplitTargetGroupId: () => undefined
   })
+
+  const redirectOccupiedBranch = useCallback(
+    (occupiedPath: string) => {
+      const target = Object.values(worktreesByRepo ?? {})
+        .flat()
+        .find((candidate) => candidate.path === occupiedPath)
+      if (target) {
+        setActiveWorktree(target.id)
+      }
+    },
+    [setActiveWorktree, worktreesByRepo]
+  )
 
   const {
     busy: actionBusy,
@@ -101,7 +114,8 @@ export default function GitGraphPane({
     onCompleted: () => {
       refresh()
       setSelectedIds([])
-    }
+    },
+    onOccupiedBranch: redirectOccupiedBranch
   })
 
   const {

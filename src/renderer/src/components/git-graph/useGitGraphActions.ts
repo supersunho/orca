@@ -20,12 +20,14 @@ export function useGitGraphActions({
   worktreeId,
   worktreePath,
   ownerTarget,
-  onCompleted
+  onCompleted,
+  onOccupiedBranch
 }: {
   worktreeId: string
   worktreePath: string | null
   ownerTarget: RuntimeClientTarget | null
   onCompleted: () => void
+  onOccupiedBranch?: (worktreePath: string) => void
 }): {
   busy: boolean
   conflict: GitGraphConflictState | null
@@ -75,6 +77,19 @@ export function useGitGraphActions({
           setConflict({ operation: result.conflict, message: result.message })
           return result
         }
+        const occupiedWorktree = result.occupiedWorktree
+        if (result.code === 'occupied-branch' && occupiedWorktree && onOccupiedBranch) {
+          toast.error(result.message, {
+            action: {
+              label: translate(
+                'auto.components.git.graph.actions.openOccupiedWorktree',
+                'Open worktree'
+              ),
+              onClick: () => onOccupiedBranch(occupiedWorktree)
+            }
+          })
+          return result
+        }
         toast.error(result.message)
         return result
       } catch (error) {
@@ -84,7 +99,7 @@ export function useGitGraphActions({
         setBusy(false)
       }
     },
-    [onCompleted, ownerTarget, worktreeId, worktreePath]
+    [onCompleted, onOccupiedBranch, ownerTarget, worktreeId, worktreePath]
   )
 
   const clearConflict = useCallback(() => setConflict(null), [])
