@@ -27,7 +27,13 @@ export type GitGraphDialogRequest =
     }
   | { kind: 'rebase'; onto: string; ignoreDate: boolean }
   | { kind: 'reset'; target: string; mode: 'soft' | 'mixed' | 'hard' }
-  | { kind: 'confirm'; title: string; description: string; action: GitGraphAction }
+  | {
+      kind: 'confirm'
+      title: string
+      description: string
+      acknowledge?: string
+      action: GitGraphAction
+    }
 
 export function GitGraphActionDialog({
   request,
@@ -55,7 +61,9 @@ export function GitGraphActionDialog({
     'mode' in request ? request.mode : 'mixed'
   )
   const [hardResetAccepted, setHardResetAccepted] = useState(false)
+  const [acknowledged, setAcknowledged] = useState(false)
   const hardReset = request.kind === 'reset' && resetMode === 'hard'
+  const needsAcknowledgment = request.kind === 'confirm' && Boolean(request.acknowledge)
 
   const submit = (): void => {
     switch (request.kind) {
@@ -276,6 +284,15 @@ export function GitGraphActionDialog({
               {translate('auto.components.git.graph.dialog.ignoreDate', 'Ignore author date')}
             </label>
           )}
+          {request.kind === 'confirm' && request.acknowledge && (
+            <label className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive">
+              <Checkbox
+                checked={acknowledged}
+                onCheckedChange={(checked) => setAcknowledged(checked === true)}
+              />
+              {request.acknowledge}
+            </label>
+          )}
           {request.kind === 'reset' && hardReset && (
             <label className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive">
               <Checkbox
@@ -296,8 +313,17 @@ export function GitGraphActionDialog({
           </Button>
           <Button
             type="button"
-            variant={request.kind === 'reset' && resetMode === 'hard' ? 'destructive' : 'default'}
-            disabled={busy || (needsName && !name.trim()) || (hardReset && !hardResetAccepted)}
+            variant={
+              (request.kind === 'reset' && resetMode === 'hard') || needsAcknowledgment
+                ? 'destructive'
+                : 'default'
+            }
+            disabled={
+              busy ||
+              (needsName && !name.trim()) ||
+              (hardReset && !hardResetAccepted) ||
+              (needsAcknowledgment && !acknowledged)
+            }
             onClick={submit}
           >
             {translate('auto.components.git.graph.dialog.confirm', 'Run')}

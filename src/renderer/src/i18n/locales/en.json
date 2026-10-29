@@ -17651,7 +17651,8 @@
             "resetHard": "Hard",
             "hardResetWarning": "Uncommitted changes will be lost. A backup ref is created before the reset.",
             "stashDescription": "Stash all working tree changes, including untracked files.",
-            "dropCommitDescription": "Remove this commit from the current branch. A backup ref is created first."
+            "dropCommitDescription": "Remove this commit from the current branch. A backup ref is created first.",
+            "dropCommitAcknowledge": "I understand this rewrites the current branch."
           },
           "menu": {
             "compare": "Compare with selected",

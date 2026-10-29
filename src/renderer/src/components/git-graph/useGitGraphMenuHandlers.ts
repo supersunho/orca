@@ -52,6 +52,10 @@ export function useGitGraphMenuHandlers({
           'auto.components.git.graph.dialog.dropCommitDescription',
           'Remove this commit from the current branch. A backup ref is created first.'
         ),
+        acknowledge: translate(
+          'auto.components.git.graph.dialog.dropCommitAcknowledge',
+          'I understand this rewrites the current branch.'
+        ),
         action: { kind: 'dropCommit', commit }
       }),
     onReset: (commit: string) => setDialogRequest({ kind: 'reset', target: commit, mode: 'mixed' }),
