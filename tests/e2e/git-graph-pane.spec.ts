@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { test, expect } from './helpers/orca-app'
 import { waitForSessionReady, waitForActiveWorktree } from './helpers/store'
 
@@ -59,5 +60,49 @@ test.describe('Git Graph pane', () => {
     expect(JSON.parse(stored ?? '{}')).toMatchObject({ showAuthor: false })
 
     await orcaPage.screenshot({ path: testInfo.outputPath('git-graph-pane.png') })
+  })
+
+  test('creates a tag through the row context menu', async ({ orcaPage, seededRepoPath }) => {
+    const worktreeId = await waitForActiveWorktree(orcaPage)
+    await orcaPage.evaluate(
+      async ({ targetWorktreeId }) => {
+        await window.__store?.getState().updateSettings({ uiLanguage: 'en' })
+        const store = window.__store
+        if (!store) {
+          throw new Error('store unavailable')
+        }
+        const state = store.getState()
+        const targetGroupId =
+          state.activeGroupIdByWorktree[targetWorktreeId] ??
+          state.groupsByWorktree[targetWorktreeId]?.[0]?.id
+        if (!targetGroupId) {
+          throw new Error('no tab group for worktree')
+        }
+        const tab = state.createUnifiedTab(targetWorktreeId, 'git-graph', {
+          label: 'Git Graph',
+          targetGroupId,
+          activate: true
+        })
+        store.getState().activateTab(tab.id)
+        store.getState().setActiveTabType('git-graph', targetWorktreeId)
+      },
+      { targetWorktreeId: worktreeId }
+    )
+    const row = orcaPage.locator('[data-testid="git-graph-row"]').first()
+    await expect(row).toBeVisible({ timeout: 15_000 })
+    await row.click({ button: 'right' })
+    await orcaPage.getByRole('menuitem', { name: 'Create tag here' }).click()
+    const tagName = `e2e-ui-${Date.now()}`
+    await orcaPage.getByLabel('Tag name').fill(tagName)
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect
+      .poll(
+        () =>
+          execFileSync('git', ['-C', seededRepoPath, 'tag', '--list', tagName], {
+            encoding: 'utf8'
+          }).trim(),
+        { timeout: 15_000 }
+      )
+      .toBe(tagName)
   })
 })
