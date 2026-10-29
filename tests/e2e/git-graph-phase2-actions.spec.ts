@@ -54,6 +54,8 @@ test('runs stash, sync, checkout, rename, and delete through the UI', async ({
   await waitForSessionReady(orcaPage)
   const worktreeId = await waitForActiveWorktree(orcaPage)
   const defaultBranch = git(seededRepoPath, ['branch', '--show-current'])
+  const initialHead = git(seededRepoPath, ['rev-parse', 'HEAD'])
+  const initialStashes = git(seededRepoPath, ['stash', 'list', '--format=%gd'])
   const origin = mkdtempSync(path.join(os.tmpdir(), 'orca-e2e-phase2-origin-'))
   try {
     git(origin, ['init', '--bare'])
@@ -178,8 +180,12 @@ test('runs stash, sync, checkout, rename, and delete through the UI', async ({
       git(seededRepoPath, ['checkout', defaultBranch])
       git(seededRepoPath, ['remote', 'remove', 'e2e-origin'])
       git(seededRepoPath, ['remote', 'remove', 'origin'])
-      git(seededRepoPath, ['stash', 'clear'])
-      git(seededRepoPath, ['reset', '--hard'])
+      git(seededRepoPath, ['reset', '--hard', initialHead])
+      for (const stash of git(seededRepoPath, ['stash', 'list', '--format=%gd']).split('\n')) {
+        if (stash && !initialStashes.split('\n').includes(stash)) {
+          git(seededRepoPath, ['stash', 'drop', stash])
+        }
+      }
     } catch {
       // The disposable seeded repo may already be gone after a failed launch.
     }

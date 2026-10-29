@@ -11,7 +11,7 @@ import {
   type DockerSshHostTarget
 } from './helpers/docker-ssh-host-target'
 
-const TEMPLATE = process.env.ORCA_ORCAD_TEMPLATE_PATH
+const TEMPLATE = process.env.ORCA_E2E_ORCAD_CONVERT_TEMPLATE ?? process.env.ORCA_ORCAD_TEMPLATE_PATH
 
 function assertGitGraphActionResult(value: unknown): asserts value is GitGraphActionResult {
   if (
@@ -178,7 +178,7 @@ async function openGitGraphTab(page: Page, worktreeId: string): Promise<void> {
 // oxlint-disable-next-line no-empty-pattern -- this test owns its Docker host and app.
 test('loads Git Graph history from a managed SSH runtime repo', async ({}, testInfo) => {
   const template = TEMPLATE ?? ''
-  test.skip(!template, 'Set ORCA_ORCAD_TEMPLATE_PATH to a matched linux orcad template')
+  test.skip(!template, 'Set ORCA_E2E_ORCAD_CONVERT_TEMPLATE to a matched linux orcad template')
   test.setTimeout(15 * 60_000)
   const target = startDockerSshHostTarget(testInfo)
   const session = createRestartSession(testInfo, { ORCA_ORCAD_TEMPLATE_PATH: template })
