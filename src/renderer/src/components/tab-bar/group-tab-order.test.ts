@@ -435,6 +435,7 @@ describe('group order matches the rendered tab strip', () => {
       browserTabIds: [],
       simulatorTabIds: [],
       agentSessionTabIds: [],
+      gitGraphTabIds: [],
       terminalMap: terminalMap as never,
       editorMap: new Map(),
       browserMap: new Map(),

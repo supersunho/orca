@@ -1,5 +1,6 @@
+/* eslint-disable max-lines -- Why: the history panel keeps header, resize, expansion, and commit rows on one surface. */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, CircleHelp, RefreshCw } from 'lucide-react'
+import { ChevronDown, CircleHelp, GitBranch, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -45,6 +46,7 @@ export function GitHistoryPanel({
   collapsed,
   onToggle,
   onRefresh,
+  onOpenGraph,
   onOpenCommit,
   onLoadCommitFiles,
   onOpenCommitFile,
@@ -54,6 +56,7 @@ export function GitHistoryPanel({
   collapsed: boolean
   onToggle: () => void
   onRefresh: () => void
+  onOpenGraph?: () => void
   onOpenCommit?: (item: GitHistoryItem) => void
   onLoadCommitFiles?: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
   onOpenCommitFile?: (
@@ -258,6 +261,34 @@ export function GitHistoryPanel({
             {result && <span className="text-[10px] font-medium tabular-nums">{count}</span>}
             {result?.hasMore && <span className="text-[10px] font-medium">+</span>}
           </button>
+          {onOpenGraph && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="my-auto h-auto w-auto p-0.5 text-muted-foreground hover:bg-transparent hover:text-muted-foreground dark:hover:bg-transparent [&_svg]:size-3"
+                  aria-label={translate(
+                    'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
+                    'Open Git Graph'
+                  )}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onOpenGraph()
+                  }}
+                >
+                  <GitBranch className="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={6}>
+                {translate(
+                  'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
+                  'Open Git Graph'
+                )}
+              </TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

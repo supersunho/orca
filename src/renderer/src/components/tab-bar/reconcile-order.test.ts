@@ -31,4 +31,9 @@ describe('reconcileTabOrder', () => {
     const stored = ['t1', 'e1', 't2', 'e2']
     expect(reconcileTabOrder(stored, ['t1', 't2'], ['e1', 'e2'])).toEqual(['t1', 'e1', 't2', 'e2'])
   })
+
+  it('keeps git-graph tabs in the reconciled order', () => {
+    expect(reconcileTabOrder(['g1', 't1'], ['t1'], [], [], [], [], ['g1'])).toEqual(['g1', 't1'])
+    expect(reconcileTabOrder(undefined, [], [], [], [], [], ['g1'])).toEqual(['g1'])
+  })
 })

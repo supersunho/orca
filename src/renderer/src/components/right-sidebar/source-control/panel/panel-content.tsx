@@ -1,4 +1,5 @@
 import { GitHistoryPanel } from '../sync/git-history-panel'
+import { ensureGitGraphTab } from '@/lib/ensure-git-graph-tab'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
 import { SourceControlBranchSection } from '../listing/branch-section'
@@ -223,6 +224,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             collapsed={collapsedSections.has('history')}
             onToggle={() => toggleSection('history')}
             onRefresh={() => void refreshGitHistory()}
+            onOpenGraph={() => ensureGitGraphTab(currentWorktreeId)}
             onOpenCommit={(item) => void openHistoryCommitDiff(item)}
             onLoadCommitFiles={loadCommitFiles}
             onOpenCommitFile={openCommitFile}

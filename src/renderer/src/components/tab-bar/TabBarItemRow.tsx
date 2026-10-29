@@ -184,6 +184,21 @@ function TabBarItemRow({
     }
     return <EditorFileTab {...fileTabProps} file={simulatorFile} onMakePermanent={() => {}} />
   }
+  if (item.type === 'git-graph') {
+    const graphLabel = item.data.label || 'Git Graph'
+    const graphFile: OpenFile & { tabId: string } = {
+      id: item.id,
+      tabId: item.id,
+      filePath: graphLabel,
+      relativePath: graphLabel,
+      worktreeId,
+      language: 'git-graph',
+      isPreview: false,
+      isDirty: false,
+      mode: 'edit'
+    }
+    return <EditorFileTab {...fileTabProps} file={graphFile} onMakePermanent={() => {}} />
+  }
   return (
     <EditorFileTab
       {...fileTabProps}

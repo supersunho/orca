@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Why: strip projection keeps every tab kind and its active-state rule in one switch. */
 import {
   readStructuredChatTabSavedName,
   projectedStructuredChatTabSavedName,
@@ -53,6 +54,13 @@ export type TabBarItem =
       unifiedTabId: string
       isPinned: boolean
       data: Tab & { contentType: 'agent-session' }
+    }
+  | {
+      type: 'git-graph'
+      id: string
+      unifiedTabId: string
+      isPinned: boolean
+      data: Tab
     }
 
 /** The terminal tab as the strip shows it: its title resolved against the generated-titles setting. */
@@ -138,6 +146,7 @@ export function buildOrderedTabItems({
   browserTabIds,
   simulatorTabIds,
   agentSessionTabIds,
+  gitGraphTabIds,
   terminalMap,
   editorMap,
   browserMap,
@@ -150,6 +159,7 @@ export function buildOrderedTabItems({
   browserTabIds: string[]
   simulatorTabIds: string[]
   agentSessionTabIds: string[]
+  gitGraphTabIds: string[]
   terminalMap: Map<string, TerminalTab & { unifiedTabId?: string }>
   editorMap: Map<string, OpenFile & { tabId?: string }>
   browserMap: Map<string, BrowserTabState & { tabId?: string }>
@@ -162,7 +172,8 @@ export function buildOrderedTabItems({
     editorFileIds,
     browserTabIds,
     simulatorTabIds,
-    agentSessionTabIds
+    agentSessionTabIds,
+    gitGraphTabIds
   )
   const items: TabBarItem[] = []
   for (const id of ids) {
@@ -222,6 +233,17 @@ export function buildOrderedTabItems({
         isPinned: agentSession.isPinned === true,
         data: agentSession
       })
+      continue
+    }
+    const gitGraphTab = unifiedTabByVisibleId.get(id)
+    if (gitGraphTab?.contentType === 'git-graph') {
+      items.push({
+        type: 'git-graph',
+        id,
+        unifiedTabId: gitGraphTab.id,
+        isPinned: gitGraphTab.isPinned === true,
+        data: gitGraphTab
+      })
     }
   }
   return items
@@ -267,6 +289,9 @@ export function findActiveVisibleTabId(
     if (item.type === 'agent-session') {
       // Structured-chat callers pass their unified tab ID; the background terminal’s activeTabId cannot identify this item.
       return active.activeTabType === 'agent-session' && item.id === active.activeTabId
+    }
+    if (item.type === 'git-graph') {
+      return active.activeTabType === 'git-graph' && active.activeFileId === item.id
     }
     return (
       (active.activeTabType === 'editor' || active.activeTabType === 'simulator') &&

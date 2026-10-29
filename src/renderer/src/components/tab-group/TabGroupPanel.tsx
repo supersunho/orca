@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 import { UNFOCUSED_SPLIT_GROUP_OPACITY } from './split-group-dim'
 
 const EditorPanel = lazy(() => import('../editor/EditorPanel'))
+const GitGraphPane = lazy(() => import('../git-graph/GitGraphPane'))
 const EMPTY_GROUPS: readonly TabGroup[] = []
 const EMPTY_CLIENT_HOSTED_ROWS: readonly ClientHostedBrowserRow[] = []
 
@@ -200,7 +201,9 @@ export default function TabGroupPanel({
               ? 'browser'
               : activeTab?.contentType === 'simulator'
                 ? 'simulator'
-                : 'editor'
+                : activeTab?.contentType === 'git-graph'
+                  ? 'git-graph'
+                  : 'editor'
       }
       onActivateFile={commands.activateEditor}
       onCloseFile={commands.closeItem}
@@ -331,11 +334,28 @@ export default function TabGroupPanel({
             data-contextual-tour-target="workspace-agent-terminal-tip"
           />
         ) : null}
+        {activeTab?.contentType === 'git-graph' && (
+          <div className="absolute inset-0 flex min-h-0 min-w-0">
+            <Suspense
+              fallback={
+                <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                  {translate(
+                    'auto.components.tab.group.TabGroupPanel.gitGraphLoading',
+                    'Loading Git Graph...'
+                  )}
+                </div>
+              }
+            >
+              <GitGraphPane worktreeId={worktreeId} executionHostId={activeTab.executionHostId} />
+            </Suspense>
+          </div>
+        )}
         {activeTab &&
           activeTab.contentType !== 'terminal' &&
           activeTab.contentType !== 'agent-session' &&
           activeTab.contentType !== 'browser' &&
-          activeTab.contentType !== 'simulator' && (
+          activeTab.contentType !== 'simulator' &&
+          activeTab.contentType !== 'git-graph' && (
             // Why: a capture-phase owner, so Monaco never sees the drop and the file opens as a tab here.
             <div ref={attachEditorFileDropOwner} className="absolute inset-0 flex min-h-0 min-w-0">
               {/* Why: split groups render editor content in a plain relative pane body, not the legacy Terminal.tsx flex column. */}

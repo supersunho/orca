@@ -3,7 +3,7 @@ import type { AppState } from '../../store/types'
 import { reconcileTabOrder } from './reconcile-order'
 
 export type VisibleTabRef = {
-  type: 'terminal' | 'editor' | 'agent-session' | 'browser' | 'simulator'
+  type: 'terminal' | 'editor' | 'agent-session' | 'browser' | 'simulator' | 'git-graph'
   id: string
   tabId?: string
 }
@@ -14,6 +14,7 @@ export type ActiveTabNavOrderIds = {
   browserIds?: string[]
   simulatorIds?: string[]
   agentSessionIds?: string[]
+  gitGraphIds?: string[]
 }
 
 /** Match reconciled visible strip order; id activates backing entities, tabId selects split copies, and missing entities are skipped. */
@@ -24,7 +25,8 @@ export function getGroupVisibleTabOrder(
   editorEntityIds: ReadonlySet<string>,
   browserEntityIds: ReadonlySet<string>,
   simulatorTabIds: ReadonlySet<string> = new Set(),
-  preserveTypeCollisions = false
+  preserveTypeCollisions = false,
+  gitGraphTabIds: ReadonlySet<string> = new Set()
 ): VisibleTabRef[] {
   const tabsById = new Map(groupTabs.map((t) => [t.id, t]))
   const toRef = (tab: Tab): VisibleTabRef | null => {
@@ -45,6 +47,9 @@ export function getGroupVisibleTabOrder(
       // Structured chat tabs are self-backed: the unified tab is the entity, so none can be stale.
       return { type: 'agent-session', id: tab.entityId, tabId: tab.id }
     }
+    if (tab.contentType === 'git-graph') {
+      return gitGraphTabIds.has(tab.id) ? { type: 'git-graph', id: tab.id, tabId: tab.id } : null
+    }
     return editorEntityIds.has(tab.entityId)
       ? { type: 'editor', id: tab.entityId, tabId: tab.id }
       : null
@@ -63,7 +68,8 @@ export function getGroupVisibleTabOrder(
       editor: new Set<string>(),
       browser: new Set<string>(),
       simulator: new Set<string>(),
-      'agent-session': new Set<string>()
+      'agent-session': new Set<string>(),
+      'git-graph': new Set<string>()
     }
     const result: VisibleTabRef[] = []
     for (const unifiedId of group.tabOrder) {
@@ -92,12 +98,14 @@ export function getGroupVisibleTabOrder(
   const browserIds: string[] = []
   const simulatorIds: string[] = []
   const agentSessionIds: string[] = []
+  const gitGraphIds: string[] = []
   const idsByType = {
     terminal: terminalIds,
     editor: editorIds,
     browser: browserIds,
     simulator: simulatorIds,
-    'agent-session': agentSessionIds
+    'agent-session': agentSessionIds,
+    'git-graph': gitGraphIds
   }
   for (const tab of [...declaredTabs, ...groupTabs]) {
     const visibleId = visibleIdOf(tab)
@@ -113,7 +121,8 @@ export function getGroupVisibleTabOrder(
         editor: 1,
         browser: 2,
         simulator: 3,
-        'agent-session': 4
+        'agent-session': 4,
+        'git-graph': 5
       } as const
       if (priority[ref.type] > priority[existing.type]) {
         continue
@@ -131,7 +140,8 @@ export function getGroupVisibleTabOrder(
     editorIds,
     browserIds,
     simulatorIds,
-    agentSessionIds
+    agentSessionIds,
+    gitGraphIds
   ).flatMap((visibleId) => {
     const ref = refByVisibleId.get(visibleId)
     return ref ? [ref] : []

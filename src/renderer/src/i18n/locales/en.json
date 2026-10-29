@@ -1132,6 +1132,11 @@
           "tab": {
             "372d21d428": "Mobile Emulator"
           }
+        },
+        "git": {
+          "graph": {
+            "tab": "Git Graph"
+          }
         }
       },
       "fix": {
@@ -3772,7 +3777,8 @@
           "TabGroupPanel": {
             "814fb04c43": "Loading editor...",
             "9acaf92093": "Pane Actions",
-            "closePaneColumn": "Close split pane"
+            "closePaneColumn": "Close split pane",
+            "gitGraphLoading": "Loading Git Graph..."
           },
           "AiVaultSessionDropLayer": {
             "dropOntoTerminalPane": "Drop onto a terminal pane to resume this session.",
@@ -12597,7 +12603,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Open commit {{value0}}: {{value1}}",
             "e5e81e59a6": "Resize commits",
-            "6d1e0a7c3b": "Failed to load commit files"
+            "6d1e0a7c3b": "Failed to load commit files",
+            "openGitGraph": "Open Git Graph"
           },
           "HostedReviewActions": {
             "4d5fb5a284": "Close",
@@ -17583,6 +17590,132 @@
         "cancelled": "This plain SSH terminal was closed before it started.",
         "terminalUnavailable": "Orca couldn’t open a terminal here.",
         "openHint": "Keeps you working on the host while Orca can’t set up there."
+      },
+      "git": {
+        "graph": {
+          "pane": {
+            "title": "Git Graph",
+            "search": "Search all commits",
+            "refresh": "Refresh Git Graph",
+            "clearFilters": "Clear filters",
+            "oldRuntime": "This runtime does not support the all-branch graph. Showing the current branch only.",
+            "description": "Description",
+            "author": "Author",
+            "date": "Date",
+            "commit": "Commit",
+            "loading": "Loading graph...",
+            "empty": "No commits found.",
+            "loadMore": "Load more commits",
+            "compareTitle": "Compare commits",
+            "closeDetails": "Close details",
+            "comparing": "Comparing...",
+            "files": "Files",
+            "openDiff": "Open commit diff",
+            "compareFailed": "Comparison failed.",
+            "loadingFiles": "Loading files...",
+            "noFiles": "No changed files."
+          },
+          "row": {
+            "worktreeHead": "Worktree HEAD: {{value0}}",
+            "head": "HEAD",
+            "filterRef": "{{value0}} — click to filter"
+          },
+          "dialog": {
+            "title": "Git Graph action",
+            "resetDescription": "Move the current branch to {{value0}}.",
+            "mergeDescription": "Merge {{value0}} into the current branch.",
+            "rebaseDescription": "Rebase the current branch onto {{value0}}.",
+            "deleteBranchDescription": "Delete branch {{value0}}.",
+            "tagName": "Tag name",
+            "branchName": "Branch name",
+            "tagMessage": "Tag message (optional)",
+            "resetMode": "Reset mode",
+            "checkoutAfterCreate": "Check out after creating",
+            "forceDelete": "Force delete unmerged branch",
+            "pushAfterCreate": "Push tag after creating",
+            "noFastForward": "No fast-forward",
+            "squash": "Squash commits",
+            "noCommit": "Do not commit",
+            "ignoreDate": "Ignore author date",
+            "cancel": "Cancel",
+            "confirm": "Run",
+            "deleteTagDescription": "Delete the tag from this repository.",
+            "pushTagDescription": "Push the tag to the default remote.",
+            "resetSoft": "Soft",
+            "resetMixed": "Mixed",
+            "resetHard": "Hard",
+            "hardResetWarning": "Uncommitted changes will be lost. A backup ref is created before the reset.",
+            "stashDescription": "Stash all working tree changes, including untracked files.",
+            "dropCommitDescription": "Remove this commit from the current branch. A backup ref is created first."
+          },
+          "menu": {
+            "compare": "Compare with selected",
+            "checkoutCommit": "Checkout this commit",
+            "createBranchHere": "Create branch here",
+            "createTagHere": "Create tag here",
+            "cherryPick": "Cherry-pick commit",
+            "revert": "Revert commit",
+            "reset": "Reset current branch to here",
+            "copyHash": "Copy commit hash",
+            "copySubject": "Copy commit subject",
+            "checkoutBranch": "Checkout {{value0}}",
+            "createBranchFrom": "Create branch from {{value0}}",
+            "mergeIntoCurrent": "Merge {{value0}} into current",
+            "rebaseOnto": "Rebase current onto {{value0}}",
+            "renameBranch": "Rename {{value0}}",
+            "deleteBranch": "Delete {{value0}}",
+            "pushTag": "Push tag {{value0}}",
+            "deleteTag": "Delete tag {{value0}}",
+            "dropCommit": "Drop commit"
+          },
+          "conflict": {
+            "continue": "Continue",
+            "skip": "Skip",
+            "abort": "Abort",
+            "dismiss": "Dismiss",
+            "review": "Review"
+          },
+          "actions": {
+            "noWorktree": "This worktree is not available for Git actions.",
+            "completed": "Git action completed.",
+            "completedWithBackup": "Git action completed. Backup: {{value0}}"
+          },
+          "sync": {
+            "completed": "Git {{value0}} completed.",
+            "fetch": "Fetch",
+            "pull": "Pull",
+            "push": "Push",
+            "stash": "Stash",
+            "pullDescription": "Pull from the upstream branch into this worktree.",
+            "pushDescription": "Push this worktree branch to its remote."
+          },
+          "aux": {
+            "stashes": "Stashes",
+            "backups": "Backups",
+            "stashesDescription": "Apply, pop, or drop a stash in this worktree.",
+            "backupsDescription": "Restore a backup ref created before a history-changing action.",
+            "noStashes": "No stashes.",
+            "apply": "Apply",
+            "pop": "Pop",
+            "confirmDrop": "Confirm drop",
+            "drop": "Drop",
+            "noBackups": "No backups.",
+            "confirmRestore": "Confirm restore",
+            "restore": "Restore"
+          },
+          "remote": {
+            "title": "Remotes",
+            "description": "Add, remove, or change the URL of a Git remote.",
+            "mode": "Operation",
+            "add": "Add remote",
+            "remove": "Remove remote",
+            "setUrl": "Change URL",
+            "name": "Remote name",
+            "url": "Remote URL",
+            "namePlaceholder": "origin",
+            "urlPlaceholder": "git@github.com:owner/repo.git"
+          }
+        }
       }
     },
     "i18n": {

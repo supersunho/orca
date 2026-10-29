@@ -20,5 +20,8 @@ export function tabItemLabel(
   if (item.type === 'simulator') {
     return item.data.label || 'Mobile Emulator'
   }
+  if (item.type === 'git-graph') {
+    return item.data.label || 'Git Graph'
+  }
   return getEditorDisplayLabel(item.data)
 }

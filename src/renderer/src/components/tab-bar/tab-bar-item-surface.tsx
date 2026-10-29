@@ -94,6 +94,9 @@ export function renderTabBarItems({
     if (item.type === 'agent-session') {
       return activeTabType === 'agent-session' && item.id === activeTabId
     }
+    if (item.type === 'git-graph') {
+      return activeTabType === 'git-graph' && activeFileId === item.id
+    }
     return (activeTabType === 'editor' || activeTabType === 'simulator') && activeFileId === item.id
   }
 

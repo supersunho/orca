@@ -80,6 +80,13 @@ export function useTabBarItemProjection({
     () => agentSessionTabs?.map((tab) => tab.id) ?? [],
     [agentSessionTabs]
   )
+  const gitGraphTabIds = useMemo(
+    () =>
+      unifiedTabs
+        .filter((tab) => tab.groupId === resolvedGroupId && tab.contentType === 'git-graph')
+        .map((tab) => tab.id),
+    [unifiedTabs, resolvedGroupId]
+  )
   const orderedItems = useMemo(
     () =>
       buildOrderedTabItems({
@@ -89,6 +96,7 @@ export function useTabBarItemProjection({
         browserTabIds,
         simulatorTabIds,
         agentSessionTabIds,
+        gitGraphTabIds,
         terminalMap,
         editorMap,
         browserMap,
@@ -102,6 +110,7 @@ export function useTabBarItemProjection({
       browserTabIds,
       simulatorTabIds,
       agentSessionTabIds,
+      gitGraphTabIds,
       terminalMap,
       editorMap,
       browserMap,
