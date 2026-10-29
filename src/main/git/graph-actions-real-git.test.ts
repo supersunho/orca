@@ -332,6 +332,56 @@ describe('runGitGraphAction real git', () => {
     expect(git(repo, ['rev-parse', 'HEAD'])).toBe(preMergeHead)
   })
 
+  it('aborts a cherry-pick conflict and leaves the branch unchanged', async () => {
+    const { repo } = await createRepository()
+    git(repo, ['checkout', '-qb', 'source'])
+    await writeFile(path.join(repo, 'tracked.txt'), 'source\n')
+    git(repo, ['commit', '--quiet', '-am', 'source change'])
+    const source = git(repo, ['rev-parse', 'HEAD'])
+    git(repo, ['checkout', '-q', 'main'])
+    await writeFile(path.join(repo, 'tracked.txt'), 'main\n')
+    git(repo, ['commit', '--quiet', '-am', 'main change'])
+    const mainHead = git(repo, ['rev-parse', 'HEAD'])
+
+    const conflicted = await runGitGraphAction(repo, {
+      kind: 'cherryPick',
+      commit: source,
+      noCommit: false,
+      recordOrigin: false
+    })
+    expect(conflicted).toMatchObject({
+      ok: false,
+      code: 'conflict',
+      conflict: 'cherry-pick'
+    })
+    expect(await runGitGraphAction(repo, { kind: 'abortOperation' })).toEqual({ ok: true })
+    expect(git(repo, ['rev-parse', 'HEAD'])).toBe(mainHead)
+    expect(git(repo, ['status', '--porcelain'])).toBe('')
+  })
+
+  it('aborts a revert conflict and leaves the branch unchanged', async () => {
+    const { repo } = await createRepository()
+    await writeFile(path.join(repo, 'tracked.txt'), 'base change\n')
+    git(repo, ['commit', '--quiet', '-am', 'base change'])
+    const revertTarget = git(repo, ['rev-parse', 'HEAD'])
+    await writeFile(path.join(repo, 'tracked.txt'), 'later change\n')
+    git(repo, ['commit', '--quiet', '-am', 'later change'])
+    const laterHead = git(repo, ['rev-parse', 'HEAD'])
+
+    const conflicted = await runGitGraphAction(repo, {
+      kind: 'revert',
+      commit: revertTarget
+    })
+    expect(conflicted).toMatchObject({
+      ok: false,
+      code: 'conflict',
+      conflict: 'revert'
+    })
+    expect(await runGitGraphAction(repo, { kind: 'abortOperation' })).toEqual({ ok: true })
+    expect(git(repo, ['rev-parse', 'HEAD'])).toBe(laterHead)
+    expect(git(repo, ['status', '--porcelain'])).toBe('')
+  })
+
   it('drops a middle commit and replays later commits', async () => {
     const { repo } = await createRepository()
     await writeFile(path.join(repo, 'second.txt'), 'second\n')
