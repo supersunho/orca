@@ -177,6 +177,7 @@ test('runs stash, sync, checkout, rename, and delete through the UI', async ({
     try {
       git(seededRepoPath, ['checkout', defaultBranch])
       git(seededRepoPath, ['remote', 'remove', 'e2e-origin'])
+      git(seededRepoPath, ['remote', 'remove', 'origin'])
       git(seededRepoPath, ['stash', 'clear'])
       git(seededRepoPath, ['reset', '--hard'])
     } catch {
