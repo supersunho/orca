@@ -69,69 +69,74 @@ describe.skipIf(!ENABLED)('git graph history 100k commits / 1k refs', () => {
     }
   })
 
-  it('records initial, load-more, and search latency', async () => {
-    repo = path.join(await mkdtemp(path.join(tmpdir(), 'orca-git-graph-bench-')), 'repo')
-    execFileSync(gitBinary ?? 'git', ['init', '--quiet', repo], { env: fixtureEnv })
-    execFileSync(gitBinary ?? 'git', ['fast-import', '--quiet'], {
-      cwd: repo,
-      env: fixtureEnv,
-      input: fastImportStream(),
-      maxBuffer: 64 * 1024 * 1024,
-      stdio: ['pipe', 'ignore', 'pipe']
-    })
-    const refCount = Number(
-      execFileSync(gitBinary ?? 'git', ['for-each-ref', '--format=%(refname)'], {
+  it(
+    'records initial, load-more, and search latency',
+    async () => {
+      repo = path.join(await mkdtemp(path.join(tmpdir(), 'orca-git-graph-bench-')), 'repo')
+      execFileSync(gitBinary ?? 'git', ['init', '--quiet', repo], { env: fixtureEnv })
+      execFileSync(gitBinary ?? 'git', ['fast-import', '--quiet'], {
         cwd: repo,
         env: fixtureEnv,
-        encoding: 'utf8'
+        input: fastImportStream(),
+        maxBuffer: 64 * 1024 * 1024,
+        stdio: ['pipe', 'ignore', 'pipe']
       })
-        .trim()
-        .split('\n').length
-    )
+      const refCount = Number(
+        execFileSync(gitBinary ?? 'git', ['for-each-ref', '--format=%(refname)'], {
+          cwd: repo,
+          env: fixtureEnv,
+          encoding: 'utf8'
+        })
+          .trim()
+          .split('\n').length
+      )
 
-    const initial = await measure('initial-300', () =>
-      loadGitHistoryFromExecutor(executor, repo, { allRefs: true, limit: 300 })
-    )
-    const loadMore = await measure('load-more-100', () =>
-      loadGitHistoryFromExecutor(executor, repo, { allRefs: true, limit: 100, skip: 300 })
-    )
-    const search = await measure('search', () =>
-      loadGitHistoryFromExecutor(executor, repo, {
-        allRefs: true,
-        limit: 300,
-        search: 'bench commit 99999'
-      })
-    )
-    const renderStartedAt = performance.now()
-    const viewModels = buildGitHistoryViewModels(
-      initial.result.items,
-      buildDefaultGitHistoryColorMap(initial.result),
-      initial.result.currentRef,
-      initial.result.remoteRef,
-      initial.result.baseRef,
-      false,
-      false,
-      initial.result.mergeBase
-    )
-    const renderMs = Math.round(performance.now() - renderStartedAt)
+      const initial = await measure('initial-300', () =>
+        loadGitHistoryFromExecutor(executor, repo, { allRefs: true, limit: 300 })
+      )
+      const loadMore = await measure('load-more-100', () =>
+        loadGitHistoryFromExecutor(executor, repo, { allRefs: true, limit: 100, skip: 300 })
+      )
+      const search = await measure('search', () =>
+        loadGitHistoryFromExecutor(executor, repo, {
+          allRefs: true,
+          limit: 300,
+          search: 'bench commit 99999'
+        })
+      )
+      const renderStartedAt = performance.now()
+      const viewModels = buildGitHistoryViewModels(
+        initial.result.items,
+        buildDefaultGitHistoryColorMap(initial.result),
+        initial.result.currentRef,
+        initial.result.remoteRef,
+        initial.result.baseRef,
+        false,
+        false,
+        initial.result.mergeBase
+      )
+      const renderMs = Math.round(performance.now() - renderStartedAt)
 
-    expect(initial.result.items).toHaveLength(300)
-    expect(initial.result.scope).toBe('all-refs')
-    expect(initial.result.hasMore).toBe(true)
-    expect(loadMore.result.items).toHaveLength(100)
-    expect(search.result.items[0]?.subject).toContain('bench commit 99999')
-    expect(viewModels).toHaveLength(300)
-    expect(refCount).toBeGreaterThanOrEqual(REFS)
+      expect(initial.result.items).toHaveLength(300)
+      expect(initial.result.scope).toBe('all-refs')
+      expect(initial.result.hasMore).toBe(true)
+      expect(loadMore.result.items).toHaveLength(100)
+      expect(search.result.items[0]?.subject).toContain('bench commit 99999')
+      expect(viewModels).toHaveLength(300)
+      expect(refCount).toBeGreaterThanOrEqual(REFS)
 
-    console.log(
-      JSON.stringify({
-        commits: COMMITS,
-        refs: refCount,
-        metrics: [
-          ...[initial, loadMore, search].map(({ label, ms }) => ({ label, ms })),
-          { label: 'renderer-300', ms: renderMs }
-        ]
-      })
-    )
-  }, 120_000)
+      console.log(
+        JSON.stringify({
+          commits: COMMITS,
+          refs: refCount,
+          metrics: [
+            ...[initial, loadMore, search].map(({ label, ms }) => ({ label, ms })),
+            { label: 'renderer-300', ms: renderMs }
+          ]
+        })
+      )
+    },
+    // Why: the 100k-commit fast-import fixture needs more than the default test timeout.
+    120_000
+  )
 })

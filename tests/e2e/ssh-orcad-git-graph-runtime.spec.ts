@@ -179,6 +179,7 @@ async function openGitGraphTab(page: Page, worktreeId: string): Promise<void> {
 test('loads Git Graph history from a managed SSH runtime repo', async ({}, testInfo) => {
   const template = TEMPLATE ?? ''
   test.skip(!template, 'Set ORCA_E2E_ORCAD_CONVERT_TEMPLATE to a matched linux orcad template')
+  // Why: Docker provisioning and managed orcad startup exceed the default E2E timeout.
   test.setTimeout(15 * 60_000)
   const target = startDockerSshHostTarget(testInfo)
   const session = createRestartSession(testInfo, { ORCA_ORCAD_TEMPLATE_PATH: template })

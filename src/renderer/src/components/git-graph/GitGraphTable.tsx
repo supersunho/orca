@@ -368,6 +368,8 @@ export function GitGraphTable({
   return (
     <div
       ref={setTableNode}
+      role="grid"
+      aria-label={translate('auto.components.git.graph.pane.tableLabel', 'Commit graph')}
       className="flex min-h-0 flex-1 flex-col"
       onKeyDown={handleRowNavigation}
     >

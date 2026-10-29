@@ -15,7 +15,7 @@ function viewModel(parentIds: string[]): GitHistoryItemViewModel {
       subject: 'Merge branch',
       message: 'Merge branch',
       author: 'Ada',
-      timestamp: Date.now()
+      timestamp: 1_700_000_000_000
     },
     inputSwimlanes: [],
     outputSwimlanes: [],

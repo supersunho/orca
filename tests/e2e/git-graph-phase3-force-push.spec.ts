@@ -14,6 +14,7 @@ test('force pushes a divergent branch with an explicit acknowledgment', async ({
   orcaPage,
   seededRepoPath
 }) => {
+  // Why: Electron launch plus real Git operations can exceed the default E2E timeout.
   test.setTimeout(180_000)
   await waitForSessionReady(orcaPage)
   const worktreeId = await waitForActiveWorktree(orcaPage)

@@ -17619,7 +17619,8 @@
             "statusReadError": "Could not read working tree status: {{value0}}",
             "folderWorkspace": "Git Graph is only available for Git worktrees.",
             "resizeAuthor": "Resize author column",
-            "resizeDate": "Resize date column"
+            "resizeDate": "Resize date column",
+            "tableLabel": "Commit graph"
           },
           "row": {
             "worktreeHead": "Worktree HEAD: {{value0}}",

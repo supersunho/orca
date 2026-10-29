@@ -62,7 +62,7 @@ const commit = {
   subject: 'Initial commit',
   message: 'Initial commit',
   author: 'Ada',
-  timestamp: Date.now()
+  timestamp: 1_700_000_000_000
 }
 
 vi.mock('@/store', () => ({

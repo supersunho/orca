@@ -49,6 +49,7 @@ async function openGitGraphTab(page: Page, worktreeId: string): Promise<string> 
 
 // oxlint-disable-next-line no-empty-pattern -- this test owns both Electron launches.
 test('restores a Git Graph tab after quit and relaunch', async ({}, testInfo) => {
+  // Why: quit/relaunch and session hydration can exceed the default E2E timeout.
   test.setTimeout(300_000)
   const repoPath = seededRepoPath()
   const session = createRestartSession(testInfo)

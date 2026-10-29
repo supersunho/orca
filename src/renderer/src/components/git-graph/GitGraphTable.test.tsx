@@ -113,6 +113,12 @@ function renderTable(onClearSelection = vi.fn(), onNavigate = vi.fn()) {
 }
 
 describe('GitGraphTable keyboard navigation', () => {
+  it('exposes the commit graph as a labelled grid', () => {
+    const { getByRole } = renderTable()
+
+    expect(getByRole('grid', { name: 'Commit graph' })).toBeTruthy()
+  })
+
   it('moves row focus and selection with arrows, Home, and End', () => {
     const { getAllByTestId, onNavigate } = renderTable()
     const rows = getAllByTestId('git-graph-row')
