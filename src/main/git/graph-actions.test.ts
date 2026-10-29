@@ -603,7 +603,7 @@ describe('runGitGraphAction backup refs', () => {
     expect(calls.some((args) => args[0] === 'update-ref')).toBe(false)
   })
 
-  it('keeps the action successful when the backup ref cannot be created', async () => {
+  it('refuses the action when the backup ref cannot be created', async () => {
     installGitHandler((args) => {
       if (args[0] === 'update-ref') {
         throw execError('fatal: cannot lock ref')
@@ -619,12 +619,12 @@ describe('runGitGraphAction backup refs', () => {
       noCommit: false
     })
 
-    expect(result.ok).toBe(true)
     expect(result).toMatchObject({
-      ok: true,
-      message: expect.stringContaining('backup ref could not be created')
+      ok: false,
+      code: 'preflight',
+      message: expect.stringContaining('Could not create a backup ref')
     })
-    expect(result.ok && 'backupRef' in result).toBe(false)
+    expect(calls.some((args) => args[0] === 'merge')).toBe(false)
   })
 })
 

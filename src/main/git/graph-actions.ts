@@ -61,6 +61,9 @@ export async function runGitGraphAction(
     const backup = needsBackup(action)
       ? await createBackupRef(worktreePath, branchState, options)
       : {}
+    if (backup instanceof Error) {
+      return failure('preflight', backup.message)
+    }
 
     try {
       await runWithGitReadCacheInvalidation(async () => {
@@ -82,7 +85,7 @@ async function createBackupRef(
   worktreePath: string,
   branchState: { current: string | null },
   options: GitRuntimeOptions
-): Promise<BackupResult> {
+): Promise<BackupResult | Error> {
   const timestamp = Date.now()
   const ref = `${BACKUP_REF_PREFIX}${timestamp}-${safeBranchComponent(branchState.current)}`
   try {
@@ -90,10 +93,9 @@ async function createBackupRef(
     return { ref }
   } catch (error) {
     const { stderr } = extractExecError(error)
-    const detail = formatGitMessage(stderr, 'unknown error')
-    return {
-      warning: `The action can continue, but the backup ref could not be created: ${detail}`
-    }
+    return new Error(
+      `Could not create a backup ref before the action: ${formatGitMessage(stderr, 'unknown error')}`
+    )
   }
 }
 

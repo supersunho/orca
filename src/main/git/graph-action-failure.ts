@@ -27,14 +27,9 @@ export async function mapGitFailure(
     conflict !== 'unknown' ? conflict : stderrIndicatesConflict ? impliedOperation : null
 
   if (conflict !== 'unknown' || stderrIndicatesConflict) {
-    return failure(
-      'conflict',
-      withBackupWarning(message, backup.warning),
-      resolvedConflict ?? undefined,
-      backup.ref
-    )
+    return failure('conflict', message, resolvedConflict ?? undefined, backup.ref)
   }
-  return failure('git-error', withBackupWarning(message, backup.warning), undefined, backup.ref)
+  return failure('git-error', message, undefined, backup.ref)
 }
 
 function conflictOperationForAction(
@@ -72,10 +67,6 @@ function conflictOperationForAction(
     case 'abortOperation':
       return null
   }
-}
-
-function withBackupWarning(message: string, warning: string | undefined): string {
-  return warning ? `${message}\n${warning}` : message
 }
 
 export function formatGitMessage(message: string, fallback: string): string {
