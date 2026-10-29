@@ -8,13 +8,14 @@ import type { GitHistoryItem, GitHistoryItemRef } from '../../../../shared/git-h
 import type { ExecutionHostId } from '../../../../shared/execution-host'
 import type { GitGraphAction } from '../../../../shared/git-graph-actions'
 import { isFolderGitGraphWorkspace } from './git-graph-folder-workspace'
+import {
+  readGitGraphViewSettings,
+  writeGitGraphViewSettings,
+  type GitGraphViewSettings
+} from './git-graph-view-settings'
 import { shortRefName } from './git-graph-row-refs'
-import { Button } from '@/components/ui/button'
-import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
-import { GitGraphRow } from './GitGraphRow'
-import { GitGraphStashRow, GitGraphUncommittedRow } from './GitGraphAuxRows'
-import { GitGraphActionMenu } from './GitGraphActionMenu'
+import { GitGraphTable } from './GitGraphTable'
 import { GitGraphActionDialog, type GitGraphDialogRequest } from './GitGraphActionDialog'
 import { GitGraphAuxRefsDialog } from './GitGraphAuxRefsDialog'
 import { GitGraphRemoteDialog } from './GitGraphRemoteDialog'
@@ -70,6 +71,7 @@ export default function GitGraphPane({
     ownerTarget: gitOwnerTarget,
     refreshKey: result
   })
+  const [viewSettings, setViewSettings] = useState(readGitGraphViewSettings)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [dialogRequest, setDialogRequest] = useState<GitGraphDialogRequest | null>(null)
   const [auxDialog, setAuxDialog] = useState<'stashes' | 'backups' | null>(null)
@@ -103,7 +105,6 @@ export default function GitGraphPane({
   })
 
   const {
-    worktreeStatus,
     conflictEntries,
     hasWorkingTreeChanges,
     workingTreeChangeCount,
@@ -127,6 +128,13 @@ export default function GitGraphPane({
     })
 
   const { worktreeHeads, viewModels } = useGitGraphViewModels({ worktrees, result })
+  const displayedViewModels = useMemo(
+    () =>
+      viewSettings.muteMerges
+        ? viewModels.filter((viewModel) => viewModel.historyItem.parentIds.length <= 1)
+        : viewModels,
+    [viewModels, viewSettings.muteMerges]
+  )
 
   const toggleRefFilter = useCallback(
     (ref: GitHistoryItemRef) => {
@@ -138,6 +146,14 @@ export default function GitGraphPane({
     },
     [setRefFilter]
   )
+
+  const toggleViewSetting = useCallback((key: keyof GitGraphViewSettings) => {
+    setViewSettings((previous) => {
+      const next = { ...previous, [key]: !previous[key] }
+      writeGitGraphViewSettings(next)
+      return next
+    })
+  }, [])
 
   const selectCommit = useCallback((item: GitHistoryItem, event?: React.MouseEvent) => {
     const additive = event?.metaKey === true || event?.ctrlKey === true
@@ -213,6 +229,8 @@ export default function GitGraphPane({
         stashesVisible={showStashRows}
         onToggleStashes={() => setShowStashRows((visible) => !visible)}
         backupCount={auxRefs.backups.length}
+        viewSettings={viewSettings}
+        onToggleViewSetting={toggleViewSetting}
         onFetch={() => void runSync('fetch')}
         onPull={() => setPendingSync('pull')}
         onPush={() => setPendingSync('push')}
@@ -268,90 +286,32 @@ export default function GitGraphPane({
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="grid shrink-0 grid-cols-[76px_minmax(0,1fr)_132px_96px_76px] gap-x-2 border-b border-border bg-muted/30 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            <span />
-            <span>{translate('auto.components.git.graph.pane.description', 'Description')}</span>
-            <span>{translate('auto.components.git.graph.pane.author', 'Author')}</span>
-            <span>{translate('auto.components.git.graph.pane.date', 'Date')}</span>
-            <span>{translate('auto.components.git.graph.pane.commit', 'Commit')}</span>
-          </div>
-          <div className="min-h-0 flex-1 overflow-auto scrollbar-sleek">
-            {worktreeStatus && hasWorkingTreeChanges && (
-              <GitGraphUncommittedRow
-                changeCount={workingTreeChangeCount}
-                statusCapped={statusCapped}
-                busy={actionBusy}
-                onStash={requestStash}
-              />
-            )}
-            {showStashRows &&
-              auxRefs.stashes.map((stash) => (
-                <GitGraphStashRow
-                  key={stash.oid}
-                  stash={stash}
-                  busy={actionBusy}
-                  onApply={() =>
-                    void runAction({
-                      kind: 'stashApply',
-                      index: stash.index,
-                      reinstateIndex: false
-                    })
-                  }
-                />
-              ))}
-            {status === 'loading' && !result && (
-              <div className="p-4 text-xs text-muted-foreground">
-                {translate('auto.components.git.graph.pane.loading', 'Loading graph...')}
-              </div>
-            )}
-            {status === 'error' && !result && (
-              <div className="p-4 text-xs text-destructive">{error}</div>
-            )}
-            {result &&
-              result.items.length === 0 &&
-              !hasWorkingTreeChanges &&
-              !statusReadError &&
-              (!showStashRows || auxRefs.stashes.length === 0) && (
-                <div className="p-4 text-xs text-muted-foreground">
-                  {translate('auto.components.git.graph.pane.empty', 'No commits found.')}
-                </div>
-              )}
-            {viewModels.map((viewModel) => (
-              <ContextMenu key={viewModel.historyItem.id}>
-                <ContextMenuTrigger asChild>
-                  <div>
-                    <GitGraphRow
-                      viewModel={viewModel}
-                      worktreeHeads={worktreeHeads}
-                      actionContextHeadId={worktree?.head ?? null}
-                      selected={selectedIds.includes(viewModel.historyItem.id)}
-                      activeRefFilter={refFilter}
-                      onSelect={selectCommit}
-                      onToggleRefFilter={toggleRefFilter}
-                    />
-                  </div>
-                </ContextMenuTrigger>
-                <GitGraphActionMenu item={viewModel.historyItem} handlers={menuHandlers} />
-              </ContextMenu>
-            ))}
-            {result?.hasMore && (
-              <div className="p-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  disabled={status === 'loading' || status === 'refreshing'}
-                  onClick={() => void loadMore()}
-                >
-                  {translate('auto.components.git.graph.pane.loadMore', 'Load more commits')}
-                </Button>
-              </div>
-            )}
-            {status === 'error' && result && (
-              <div className="p-2 text-[11px] text-destructive">{error}</div>
-            )}
-          </div>
+          <GitGraphTable
+            status={status}
+            result={result}
+            error={error}
+            viewSettings={viewSettings}
+            viewModels={displayedViewModels}
+            worktreeHeads={worktreeHeads}
+            actionContextHeadId={worktree?.head ?? null}
+            selectedIds={selectedIds}
+            activeRefFilter={refFilter}
+            hasWorkingTreeChanges={hasWorkingTreeChanges}
+            workingTreeChangeCount={workingTreeChangeCount}
+            statusCapped={statusCapped}
+            statusReadError={statusReadError}
+            showStashRows={showStashRows}
+            stashes={auxRefs.stashes}
+            actionBusy={actionBusy}
+            onStash={requestStash}
+            onApplyStash={(index) =>
+              void runAction({ kind: 'stashApply', index, reinstateIndex: false })
+            }
+            onSelect={selectCommit}
+            onToggleRefFilter={toggleRefFilter}
+            menuHandlers={menuHandlers}
+            onLoadMore={() => void loadMore()}
+          />
         </div>
 
         <GitGraphDetailsPanel

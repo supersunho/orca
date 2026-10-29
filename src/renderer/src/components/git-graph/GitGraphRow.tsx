@@ -7,7 +7,9 @@ import {
   GitHistoryGraphSvg,
   graphColor
 } from '../right-sidebar/source-control/sync/git-history-graph-svg'
+import { formatGitGraphDate } from './git-graph-date'
 import { selectVisibleGraphRefs } from './git-graph-row-refs'
+import { gitGraphGridTemplate, type GitGraphViewSettings } from './git-graph-view-settings'
 
 function refCategoryLabel(ref: GitHistoryItemRef): string {
   return ref.category ? `${ref.name} (${ref.category})` : ref.name
@@ -17,6 +19,7 @@ export function GitGraphRow({
   viewModel,
   worktreeHeads,
   actionContextHeadId = null,
+  viewSettings,
   selected,
   activeRefFilter,
   onSelect,
@@ -25,6 +28,7 @@ export function GitGraphRow({
   viewModel: GitHistoryItemViewModel
   worktreeHeads: ReadonlyMap<string, readonly string[]>
   actionContextHeadId?: string | null
+  viewSettings: GitGraphViewSettings
   selected: boolean
   activeRefFilter: readonly string[]
   onSelect: (item: GitHistoryItem, event?: React.MouseEvent) => void
@@ -37,7 +41,7 @@ export function GitGraphRow({
     item.references ?? [],
     activeRefFilter
   )
-  const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleDateString() : ''
+  const timestamp = formatGitGraphDate(item.timestamp, viewSettings.relativeDates)
 
   return (
     <div
@@ -54,10 +58,11 @@ export function GitGraphRow({
         }
       }}
       className={cn(
-        'grid min-h-[28px] w-full min-w-0 cursor-pointer grid-cols-[76px_minmax(0,1fr)_132px_96px_76px] items-center gap-x-2 border-b border-border/40 px-2 py-0.5 text-xs outline-none',
+        'grid min-h-[28px] w-full min-w-0 cursor-pointer items-center gap-x-2 border-b border-border/40 px-2 py-0.5 text-xs outline-none',
         'hover:bg-accent/40 focus-visible:bg-accent/50',
         selected && 'bg-accent/60'
       )}
+      style={{ gridTemplateColumns: gitGraphGridTemplate(viewSettings) }}
     >
       <div className="flex h-7 items-center overflow-hidden">
         <GitHistoryGraphSvg viewModel={viewModel} />
@@ -132,12 +137,16 @@ export function GitGraphRow({
         </div>
       </div>
 
-      <span className="truncate text-muted-foreground" title={item.author}>
-        {item.author ?? ''}
-      </span>
-      <span className="truncate text-muted-foreground" title={timestamp}>
-        {timestamp}
-      </span>
+      {viewSettings.showAuthor && (
+        <span className="truncate text-muted-foreground" title={item.author}>
+          {item.author ?? ''}
+        </span>
+      )}
+      {viewSettings.showDate && (
+        <span className="truncate text-muted-foreground" title={timestamp}>
+          {timestamp}
+        </span>
+      )}
       <span className="truncate font-mono text-[10px] text-muted-foreground">
         {item.displayId ?? item.id.slice(0, 7)}
       </span>

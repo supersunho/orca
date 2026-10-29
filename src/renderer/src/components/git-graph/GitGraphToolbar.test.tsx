@@ -18,6 +18,13 @@ const baseProps = {
   actionBusy: false,
   stashCount: 1,
   backupCount: 0,
+  viewSettings: {
+    showAuthor: true,
+    showDate: true,
+    relativeDates: false,
+    muteMerges: false
+  },
+  onToggleViewSetting: vi.fn(),
   onFetch: vi.fn(),
   onPull: vi.fn(),
   onPush: vi.fn(),
@@ -45,5 +52,28 @@ describe('GitGraphToolbar stash rows toggle', () => {
     expect(getByRole('button', { name: 'Toggle stash rows' }).getAttribute('aria-pressed')).toBe(
       'false'
     )
+  })
+
+  it('toggles a column from the view settings menu', () => {
+    const onToggleViewSetting = vi.fn()
+    const { getByRole } = render(
+      <GitGraphToolbar
+        {...baseProps}
+        stashesVisible
+        onToggleStashes={vi.fn()}
+        onToggleViewSetting={onToggleViewSetting}
+      />
+    )
+
+    fireEvent.keyDown(getByRole('button', { name: 'Git Graph view settings' }), { key: 'Enter' })
+    const item = Array.from(
+      document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]')
+    ).find((candidate) => candidate.textContent === 'Author column')
+    expect(item).toBeTruthy()
+    if (item) {
+      fireEvent.keyDown(item, { key: 'Enter' })
+    }
+
+    expect(onToggleViewSetting).toHaveBeenCalledWith('showAuthor')
   })
 })

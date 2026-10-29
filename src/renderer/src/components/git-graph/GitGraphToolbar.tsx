@@ -1,8 +1,17 @@
 import React from 'react'
-import { Eye, EyeOff, GitBranch, RefreshCw } from 'lucide-react'
+import { Eye, EyeOff, GitBranch, RefreshCw, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
+import type { GitGraphViewSettings } from './git-graph-view-settings'
 
 export function GitGraphToolbar({
   branchLabel,
@@ -19,6 +28,8 @@ export function GitGraphToolbar({
   stashesVisible,
   onToggleStashes,
   backupCount,
+  viewSettings,
+  onToggleViewSetting,
   onFetch,
   onPull,
   onPush,
@@ -41,6 +52,8 @@ export function GitGraphToolbar({
   stashesVisible: boolean
   onToggleStashes: () => void
   backupCount: number
+  viewSettings: GitGraphViewSettings
+  onToggleViewSetting: (key: keyof GitGraphViewSettings) => void
   onFetch: () => void
   onPull: () => void
   onPush: () => void
@@ -120,6 +133,51 @@ export function GitGraphToolbar({
       <Button type="button" variant="ghost" size="sm" onClick={onRemotes}>
         {translate('auto.components.git.graph.remote.title', 'Remotes')}
       </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={translate(
+              'auto.components.git.graph.toolbar.viewSettings',
+              'Git Graph view settings'
+            )}
+          >
+            <SlidersHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuLabel>
+            {translate('auto.components.git.graph.toolbar.viewSettings', 'Git Graph view settings')}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            checked={viewSettings.showAuthor}
+            onCheckedChange={() => onToggleViewSetting('showAuthor')}
+          >
+            {translate('auto.components.git.graph.toolbar.showAuthor', 'Author column')}
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem
+            checked={viewSettings.showDate}
+            onCheckedChange={() => onToggleViewSetting('showDate')}
+          >
+            {translate('auto.components.git.graph.toolbar.showDate', 'Date column')}
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem
+            checked={viewSettings.relativeDates}
+            onCheckedChange={() => onToggleViewSetting('relativeDates')}
+          >
+            {translate('auto.components.git.graph.toolbar.relativeDates', 'Relative dates')}
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem
+            checked={viewSettings.muteMerges}
+            onCheckedChange={() => onToggleViewSetting('muteMerges')}
+          >
+            {translate('auto.components.git.graph.toolbar.muteMerges', 'Mute merge commits')}
+          </DropdownMenuCheckboxItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

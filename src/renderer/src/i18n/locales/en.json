@@ -17718,6 +17718,13 @@
             "url": "Remote URL",
             "namePlaceholder": "origin",
             "urlPlaceholder": "git@github.com:owner/repo.git"
+          },
+          "toolbar": {
+            "viewSettings": "Git Graph view settings",
+            "showAuthor": "Author column",
+            "showDate": "Date column",
+            "relativeDates": "Relative dates",
+            "muteMerges": "Mute merge commits"
           }
         }
       }
