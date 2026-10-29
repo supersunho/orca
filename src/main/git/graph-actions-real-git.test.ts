@@ -171,6 +171,54 @@ describe('runGitGraphAction real git', () => {
     expect(git(repo, ['log', '-1', '--format=%s'])).toBe('feature change')
   })
 
+  it('aborts a merge conflict and restores the pre-merge HEAD', async () => {
+    const { repo } = await createRepository()
+    git(repo, ['checkout', '-qb', 'feature'])
+    await writeFile(path.join(repo, 'tracked.txt'), 'feature\n')
+    git(repo, ['commit', '--quiet', '-am', 'feature change'])
+    git(repo, ['checkout', '-q', 'main'])
+    await writeFile(path.join(repo, 'tracked.txt'), 'main\n')
+    git(repo, ['commit', '--quiet', '-am', 'main change'])
+    const preMergeHead = git(repo, ['rev-parse', 'HEAD'])
+
+    const conflicted = await runGitGraphAction(repo, {
+      kind: 'merge',
+      target: 'feature',
+      noFastForward: true,
+      squash: false,
+      noCommit: false
+    })
+    expect(conflicted).toMatchObject({ ok: false, code: 'conflict', conflict: 'merge' })
+
+    const aborted = await runGitGraphAction(repo, { kind: 'abortOperation' })
+    expect(aborted).toEqual({ ok: true })
+    expect(git(repo, ['rev-parse', 'HEAD'])).toBe(preMergeHead)
+    expect(git(repo, ['status', '--porcelain'])).toBe('')
+  })
+
+  it('skips a conflicting rebase commit and leaves the rebase complete', async () => {
+    const { repo } = await createRepository()
+    git(repo, ['checkout', '-qb', 'feature'])
+    await writeFile(path.join(repo, 'tracked.txt'), 'feature\n')
+    git(repo, ['commit', '--quiet', '-am', 'feature change'])
+    git(repo, ['checkout', '-q', 'main'])
+    await writeFile(path.join(repo, 'tracked.txt'), 'main\n')
+    git(repo, ['commit', '--quiet', '-am', 'main change'])
+    git(repo, ['checkout', '-q', 'feature'])
+
+    const conflicted = await runGitGraphAction(repo, {
+      kind: 'rebase',
+      onto: 'main',
+      ignoreDate: false
+    })
+    expect(conflicted).toMatchObject({ ok: false, code: 'conflict', conflict: 'rebase' })
+
+    const skipped = await runGitGraphAction(repo, { kind: 'skipOperation' })
+    expect(skipped).toEqual({ ok: true })
+    expect(git(repo, ['status', '--porcelain'])).toBe('')
+    expect(git(repo, ['log', '-1', '--format=%s'])).toBe('main change')
+  })
+
   it('blocks checkout of a branch occupied by another worktree', async () => {
     const { root, repo } = await createRepository()
     git(repo, ['branch', 'release'])
