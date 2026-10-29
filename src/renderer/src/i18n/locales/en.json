@@ -17614,7 +17614,8 @@
             "compareFailed": "Comparison failed.",
             "loadingFiles": "Loading files...",
             "noFiles": "No changed files.",
-            "statusReadError": "Could not read working tree status: {{value0}}"
+            "statusReadError": "Could not read working tree status: {{value0}}",
+            "folderWorkspace": "Git Graph is only available for Git worktrees."
           },
           "row": {
             "worktreeHead": "Worktree HEAD: {{value0}}",

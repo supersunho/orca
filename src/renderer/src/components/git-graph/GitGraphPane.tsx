@@ -7,6 +7,7 @@ import { useGitHistoryCommitActions } from '../right-sidebar/source-control/sync
 import type { GitHistoryItem, GitHistoryItemRef } from '../../../../shared/git-history'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
 import type { GitGraphAction } from '../../../../shared/git-graph-actions'
+import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { Button } from '@/components/ui/button'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
@@ -20,6 +21,7 @@ import { GitGraphSyncDialog } from './GitGraphSyncDialog'
 import { GitGraphConflictBanner } from './GitGraphConflictBanner'
 import { GitGraphStatusErrorBanner } from './GitGraphStatusErrorBanner'
 import { GitGraphOldRuntimeBanner, isOldRuntimeHistory } from './GitGraphOldRuntimeBanner'
+import { GitGraphFolderEmpty } from './GitGraphFolderEmpty'
 import { GitGraphDetailsPanel } from './GitGraphDetailsPanel'
 import { GitGraphToolbar } from './GitGraphToolbar'
 import { useGitGraphActions } from './useGitGraphActions'
@@ -189,6 +191,10 @@ export default function GitGraphPane({
     shortRefName(result?.currentRef?.name ?? '') ||
     worktree?.path ||
     ''
+
+  if (worktree && parseWorkspaceKey(worktree.id)?.type === 'folder') {
+    return <GitGraphFolderEmpty />
+  }
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
