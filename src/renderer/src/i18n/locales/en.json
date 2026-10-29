@@ -17697,7 +17697,10 @@
             "push": "Push",
             "stash": "Stash",
             "pullDescription": "Pull from the upstream branch into this worktree.",
-            "pushDescription": "Push this worktree branch to its remote."
+            "pushDescription": "Push this worktree branch to its remote.",
+            "forcePush": "Force push",
+            "forcePushDescription": "Force push this branch with lease. Remote-only commits may be replaced.",
+            "forcePushAcknowledge": "I understand this may replace remote commits."
           },
           "aux": {
             "stashes": "Stashes",

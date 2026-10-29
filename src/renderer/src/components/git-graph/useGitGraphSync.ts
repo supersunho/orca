@@ -18,11 +18,11 @@ export function useGitGraphSync({
   onCompleted: () => void
 }): {
   syncBusy: boolean
-  runSync: (kind: 'fetch' | 'pull' | 'push') => Promise<void>
+  runSync: (kind: 'fetch' | 'pull' | 'push' | 'forcePush') => Promise<void>
 } {
   const [syncBusy, setSyncBusy] = useState(false)
 
-  const runSync = async (kind: 'fetch' | 'pull' | 'push'): Promise<void> => {
+  const runSync = async (kind: 'fetch' | 'pull' | 'push' | 'forcePush'): Promise<void> => {
     if (!worktreePath || !ownerTarget) {
       return
     }
@@ -38,6 +38,8 @@ export function useGitGraphSync({
         await fetchRuntimeGit(context)
       } else if (kind === 'pull') {
         await pullRuntimeGit(context)
+      } else if (kind === 'forcePush') {
+        await pushRuntimeGit(context, { forceWithLease: true })
       } else {
         await pushRuntimeGit(context)
       }

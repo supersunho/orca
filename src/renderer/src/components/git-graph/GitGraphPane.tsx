@@ -81,7 +81,7 @@ export default function GitGraphPane({
   const [dialogRequest, setDialogRequest] = useState<GitGraphDialogRequest | null>(null)
   const [auxDialog, setAuxDialog] = useState<'stashes' | 'backups' | null>(null)
   const [remoteOpen, setRemoteOpen] = useState(false)
-  const [pendingSync, setPendingSync] = useState<'pull' | 'push' | null>(null)
+  const [pendingSync, setPendingSync] = useState<'pull' | 'push' | 'forcePush' | null>(null)
   const [showStashRows, setShowStashRows] = useState(true)
   const setActiveWorktree = useAppStore((state) => state.setActiveWorktree)
   const openCommitDiff = useAppStore((state) => state.openCommitDiff)
@@ -246,6 +246,7 @@ export default function GitGraphPane({
         onFetch={() => void runSync('fetch')}
         onPull={() => setPendingSync('pull')}
         onPush={() => setPendingSync('push')}
+        onForcePush={() => setPendingSync('forcePush')}
         onStashes={() => setAuxDialog('stashes')}
         onBackups={() => setAuxDialog('backups')}
         onRemotes={() => setRemoteOpen(true)}

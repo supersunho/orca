@@ -31,6 +31,7 @@ const baseProps = {
   onFetch: vi.fn(),
   onPull: vi.fn(),
   onPush: vi.fn(),
+  onForcePush: vi.fn(),
   onStash: vi.fn(),
   onStashes: vi.fn(),
   onBackups: vi.fn(),

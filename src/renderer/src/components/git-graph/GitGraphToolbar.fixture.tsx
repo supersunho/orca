@@ -24,6 +24,7 @@ const props = {
   onFetch: noop,
   onPull: noop,
   onPush: noop,
+  onForcePush: noop,
   onStash: noop,
   onStashes: noop,
   onBackups: noop,

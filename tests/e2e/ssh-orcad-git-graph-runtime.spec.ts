@@ -317,6 +317,40 @@ test('loads Git Graph history from a managed SSH runtime repo', async ({}, testI
       throw new Error(`SSH remote remove rejected: ${remoteRemoveResult.message}`)
     }
     expect(remoteGit('remote')).not.toContain('e2e-origin')
+
+    const resetTarget = remoteGit('rev-parse HEAD')
+    remoteGit("commit --allow-empty -m 'ssh reset target'")
+    const preReset = remoteGit('rev-parse HEAD')
+    const resetResult = await runRemoteGraphAction(launched.page, environmentId, worktreeId, {
+      kind: 'reset',
+      target: resetTarget,
+      mode: 'hard'
+    })
+    if (!resetResult.ok) {
+      throw new Error(`SSH reset rejected: ${resetResult.message}`)
+    }
+    expect(remoteGit('rev-parse HEAD')).toBe(resetTarget)
+    expect(preReset).not.toBe(resetTarget)
+
+    const backupRefs = execDockerSshHostTargetCommand(
+      target,
+      `git -C ${DOCKER_SSH_HOST_REMOTE_REPO_PATH} for-each-ref --format='%(refname) %(objectname)' refs/orca/backup`
+    )
+    const resetBackup = backupRefs
+      .split('\n')
+      .find((line) => line.endsWith(` ${preReset}`))
+      ?.split(' ')[0]
+    if (!resetBackup) {
+      throw new Error('SSH reset did not create a backup ref')
+    }
+    const restoreResult = await runRemoteGraphAction(launched.page, environmentId, worktreeId, {
+      kind: 'restoreBackup',
+      ref: resetBackup
+    })
+    if (!restoreResult.ok) {
+      throw new Error(`SSH backup restore rejected: ${restoreResult.message}`)
+    }
+    expect(remoteGit('rev-parse HEAD')).toBe(preReset)
   } finally {
     if (app) {
       await session.close(app)

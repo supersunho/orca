@@ -273,6 +273,65 @@ describe('runGitGraphAction real git', () => {
     expect(git(repo, ['rev-parse', 'HEAD'])).toBe(base)
   })
 
+  it('cherry-picks and reverts a commit on the current branch', async () => {
+    const { repo } = await createRepository()
+    git(repo, ['checkout', '-qb', 'source'])
+    await writeFile(path.join(repo, 'side.txt'), 'side\n')
+    git(repo, ['add', 'side.txt'])
+    git(repo, ['commit', '--quiet', '-m', 'side commit'])
+    const source = git(repo, ['rev-parse', 'HEAD'])
+    git(repo, ['checkout', '-q', 'main'])
+
+    const picked = await runGitGraphAction(repo, {
+      kind: 'cherryPick',
+      commit: source,
+      noCommit: false,
+      recordOrigin: false
+    })
+    expect(picked).toMatchObject({ ok: true })
+    expect(git(repo, ['log', '-1', '--format=%s'])).toBe('side commit')
+    const pickedHead = git(repo, ['rev-parse', 'HEAD'])
+
+    const reverted = await runGitGraphAction(repo, { kind: 'revert', commit: pickedHead })
+    expect(reverted).toMatchObject({ ok: true })
+    expect(git(repo, ['log', '-1', '--format=%s'])).toContain('Revert')
+    expect(git(repo, ['status', '--porcelain'])).toBe('')
+  })
+
+  it('keeps a backup ref for a merge conflict and restores it after abort', async () => {
+    const { repo } = await createRepository()
+    git(repo, ['checkout', '-qb', 'feature'])
+    await writeFile(path.join(repo, 'tracked.txt'), 'feature\n')
+    git(repo, ['commit', '--quiet', '-am', 'feature change'])
+    git(repo, ['checkout', '-q', 'main'])
+    await writeFile(path.join(repo, 'tracked.txt'), 'main\n')
+    git(repo, ['commit', '--quiet', '-am', 'main change'])
+    const preMergeHead = git(repo, ['rev-parse', 'HEAD'])
+
+    const conflicted = await runGitGraphAction(repo, {
+      kind: 'merge',
+      target: 'feature',
+      noFastForward: true,
+      squash: false,
+      noCommit: false
+    })
+    expect(conflicted).toMatchObject({ ok: false, code: 'conflict', conflict: 'merge' })
+    if (conflicted.ok || !conflicted.backupRef) {
+      throw new Error('expected a conflict with a backup ref')
+    }
+    expect(git(repo, ['rev-parse', `${conflicted.backupRef}^{commit}`])).toBe(preMergeHead)
+
+    expect(await runGitGraphAction(repo, { kind: 'abortOperation' })).toEqual({ ok: true })
+    await writeFile(path.join(repo, 'tracked.txt'), 'later\n')
+    git(repo, ['commit', '--quiet', '-am', 'later'])
+    const restored = await runGitGraphAction(repo, {
+      kind: 'restoreBackup',
+      ref: conflicted.backupRef
+    })
+    expect(restored).toMatchObject({ ok: true })
+    expect(git(repo, ['rev-parse', 'HEAD'])).toBe(preMergeHead)
+  })
+
   it('drops a middle commit and replays later commits', async () => {
     const { repo } = await createRepository()
     await writeFile(path.join(repo, 'second.txt'), 'second\n')

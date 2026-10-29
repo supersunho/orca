@@ -34,6 +34,7 @@ export function GitGraphToolbar({
   onFetch,
   onPull,
   onPush,
+  onForcePush,
   onStash,
   onStashes,
   onBackups,
@@ -58,6 +59,7 @@ export function GitGraphToolbar({
   onFetch: () => void
   onPull: () => void
   onPush: () => void
+  onForcePush: () => void
   onStash: () => void
   onStashes: () => void
   onBackups: () => void
@@ -100,6 +102,9 @@ export function GitGraphToolbar({
       </Button>
       <Button type="button" variant="ghost" size="sm" disabled={syncBusy} onClick={onPush}>
         {translate('auto.components.git.graph.sync.push', 'Push')}
+      </Button>
+      <Button type="button" variant="ghost" size="sm" disabled={syncBusy} onClick={onForcePush}>
+        {translate('auto.components.git.graph.sync.forcePush', 'Force push')}
       </Button>
       {hasWorkingTreeChanges && (
         <Button type="button" variant="ghost" size="sm" disabled={actionBusy} onClick={onStash}>
