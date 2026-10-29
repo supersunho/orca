@@ -119,5 +119,31 @@ test.describe('Git Graph pane', () => {
         { timeout: 15_000 }
       )
       .toContain(branchName)
+
+    const remoteName = `e2e-ui-remote-${Date.now()}`
+    await orcaPage.getByRole('button', { name: 'Remotes' }).click()
+    await orcaPage.getByLabel('Remote name').fill(remoteName)
+    await orcaPage.getByLabel('Remote URL').fill('https://example.com/e2e.git')
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect
+      .poll(
+        () => execFileSync('git', ['-C', seededRepoPath, 'remote'], { encoding: 'utf8' }).trim(),
+        { timeout: 15_000 }
+      )
+      .toContain(remoteName)
+
+    await orcaPage.getByRole('button', { name: 'Remotes' }).click()
+    await orcaPage.getByLabel('Operation').selectOption('remove')
+    await orcaPage.getByLabel('Remote name').fill(remoteName)
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect
+      .poll(
+        () => execFileSync('git', ['-C', seededRepoPath, 'remote'], { encoding: 'utf8' }).trim(),
+        { timeout: 15_000 }
+      )
+      .not.toContain(remoteName)
+
+    await orcaPage.getByRole('button', { name: 'Fetch' }).click()
+    await expect(orcaPage.getByRole('button', { name: 'Git Graph view settings' })).toBeVisible()
   })
 })
