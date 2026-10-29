@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo } from 'react'
+import { Suspense, useCallback, useMemo } from 'react'
 import { isWebClientLocation } from '@/lib/web-client-location'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { useDroppable } from '@dnd-kit/core'
@@ -22,6 +22,7 @@ import { resolveClientHostedBrowserRowStripGroupId } from '../tab-bar/client-hos
 import { useEditorGroupFileDropOwner } from '../editor/use-editor-group-file-drop-owner'
 import { cn } from '@/lib/utils'
 import { UNFOCUSED_SPLIT_GROUP_OPACITY } from './split-group-dim'
+import { useWebGitGraphFallback } from './web-git-graph-fallback'
 
 const EditorPanel = lazy(() => import('../editor/EditorPanel'))
 const GitGraphPane = lazy(() => import('../git-graph/GitGraphPane'))
@@ -81,16 +82,11 @@ export default function TabGroupPanel({
     tabBarOrder,
     terminalTabs
   } = model
-  const webGitGraphActive = activeTab?.contentType === 'git-graph' && isWebClientLocation()
-  useEffect(() => {
-    if (!webGitGraphActive) {
-      return
-    }
-    const fallback = model.groupTabs.find((tab) => tab.contentType === 'terminal')
-    if (fallback) {
-      commands.activateTerminal(fallback.entityId)
-    }
-  }, [commands, model.groupTabs, webGitGraphActive])
+  useWebGitGraphFallback({
+    active: activeTab?.contentType === 'git-graph' && isWebClientLocation(),
+    tabs: model.groupTabs,
+    commands
+  })
   // Why: one strip owns the worktree's client-hosted rows, or every split repeats them.
   const ownsClientHostedRows = useAppStore(
     (state) =>
