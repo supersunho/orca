@@ -9,6 +9,8 @@ import { listGraphAuxRefs } from '../../../git/graph-aux-refs'
 import { assertWslUncPathRunning } from '../../../wsl/wsl-unc-access-gate'
 import { requireReachableGitRoute } from '../../../providers/execution-host-provider-dispatch'
 import { getConnectionExecutionHostId } from '../../../../shared/execution-host'
+import { GitGraphActionSchema } from '../../../../shared/rpc-contract/git-graph-action-params'
+import { failure } from '../../../git/graph-action-result'
 import { resolveRegisteredWorktreePath } from '../../registered-worktree-roots-cache'
 import { getLocalGitOptionsForRegisteredWorktree } from '../../local-worktree-runtime-options'
 import type { FilesystemHandlerContext } from '../filesystem-handler-context'
@@ -22,6 +24,10 @@ export function registerGitGraphActionHandlers(context: FilesystemHandlerContext
       _event,
       args: { worktreePath: string; action: GitGraphAction; connectionId?: string }
     ): Promise<GitGraphActionResult> => {
+      const parsed = GitGraphActionSchema.safeParse(args.action)
+      if (!parsed.success) {
+        return failure('invalid-input', 'Invalid graph action.')
+      }
       requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
       // Do not boot a stopped WSL distro for a graph mutation.
       await assertWslUncPathRunning(args.worktreePath)
@@ -32,7 +38,7 @@ export function registerGitGraphActionHandlers(context: FilesystemHandlerContext
         worktreePath
       )
       await assertWslUncPathRunning(worktreePath, gitOptions.wslDistro)
-      return runGitGraphActionWithStashLock(worktreePath, args.action, gitOptions)
+      return runGitGraphActionWithStashLock(worktreePath, parsed.data, gitOptions)
     }
   )
 
