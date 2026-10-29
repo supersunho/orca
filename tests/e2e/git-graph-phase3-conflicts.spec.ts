@@ -2,10 +2,22 @@ import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import path from 'node:path'
 import { expect, test } from './helpers/orca-app'
+import type { GitGraphAction, GitGraphActionResult } from '../../src/shared/git-graph-actions'
 import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
 
 function git(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+}
+
+async function runGraphAction(
+  page: Parameters<typeof waitForActiveWorktree>[0],
+  repoPath: string,
+  action: GitGraphAction
+): Promise<GitGraphActionResult> {
+  return page.evaluate(
+    async ({ worktreePath, action }) => window.api.git.graphAction({ worktreePath, action }),
+    { worktreePath: repoPath, action }
+  )
 }
 
 async function openGitGraph(
@@ -64,6 +76,10 @@ test('aborts a merge conflict and restores a hard-reset backup through the UI', 
     git(seededRepoPath, ['checkout', '-qb', 'phase3-conflict'])
     appendFileSync(path.join(seededRepoPath, 'README.md'), '\nconflict branch\n')
     git(seededRepoPath, ['commit', '-am', 'conflict branch'])
+    appendFileSync(path.join(seededRepoPath, 'phase3-cherry.txt'), 'cherry\n')
+    git(seededRepoPath, ['add', 'phase3-cherry.txt'])
+    git(seededRepoPath, ['commit', '-m', 'cherry source'])
+    const cherrySource = git(seededRepoPath, ['rev-parse', 'HEAD'])
     git(seededRepoPath, ['checkout', defaultBranch])
     appendFileSync(path.join(seededRepoPath, 'README.md'), '\nconflict main\n')
     git(seededRepoPath, ['commit', '-am', 'conflict main'])
@@ -92,15 +108,21 @@ test('aborts a merge conflict and restores a hard-reset backup through the UI', 
     git(seededRepoPath, ['add', 'README.md'])
     await orcaPage.getByRole('button', { name: 'Continue' }).click()
     await expect.poll(() => git(seededRepoPath, ['status', '--porcelain'])).toBe('')
-    await expect.poll(() => git(seededRepoPath, ['rev-list', '--count', 'HEAD'])).toBe('4')
+    await expect
+      .poll(() => git(seededRepoPath, ['log', '-1', '--format=%P']).split(' ').length)
+      .toBe(2)
 
-    const mainRow = orcaPage.locator('[data-testid="git-graph-row"]').nth(1)
+    const resetTarget = git(seededRepoPath, ['rev-parse', `${headBeforeMerge}^`])
+    const mainRow = orcaPage.locator(
+      `[data-testid="git-graph-row"][data-commit-id="${resetTarget}"]`
+    )
+    await expect(mainRow).toBeVisible({ timeout: 15_000 })
     await mainRow.click({ button: 'right' })
     await orcaPage.getByRole('menuitem', { name: 'Reset current branch to here' }).click()
     await orcaPage.getByLabel('Reset mode').selectOption('hard')
     await orcaPage.getByRole('checkbox').check()
     await orcaPage.getByRole('button', { name: 'Run' }).click()
-    await expect.poll(() => git(seededRepoPath, ['rev-parse', 'HEAD'])).not.toBe(headBeforeMerge)
+    await expect.poll(() => git(seededRepoPath, ['rev-parse', 'HEAD'])).toBe(resetTarget)
 
     await orcaPage.getByRole('button', { name: /^Backups/ }).click()
     await orcaPage.getByRole('button', { name: 'Restore' }).first().click()
@@ -108,7 +130,8 @@ test('aborts a merge conflict and restores a hard-reset backup through the UI', 
     await expect.poll(() => git(seededRepoPath, ['rev-parse', 'HEAD'])).toBe(headBeforeMerge)
 
     git(seededRepoPath, ['checkout', '-q', 'phase3-conflict'])
-    const rebaseHead = git(seededRepoPath, ['rev-parse', 'HEAD'])
+    const conflictSource = git(seededRepoPath, ['rev-parse', 'HEAD'])
+    const rebaseHead = conflictSource
     const rebaseRow = orcaPage.locator('[data-testid="git-graph-row"]').filter({
       has: orcaPage.getByRole('button', { name: defaultBranch, exact: true })
     })
@@ -118,11 +141,49 @@ test('aborts a merge conflict and restores a hard-reset backup through the UI', 
     await orcaPage.getByRole('button', { name: 'Run' }).click()
     await expect(orcaPage.getByText(/rebase ·/i)).toBeVisible({ timeout: 15_000 })
     await orcaPage.getByRole('button', { name: 'Skip' }).click()
+    await expect
+      .poll(() => {
+        try {
+          git(seededRepoPath, ['rev-parse', '--verify', 'REBASE_HEAD'])
+          return false
+        } catch {
+          return true
+        }
+      })
+      .toBe(true)
     await expect.poll(() => git(seededRepoPath, ['status', '--porcelain'])).toBe('')
     await expect.poll(() => git(seededRepoPath, ['rev-parse', 'HEAD'])).not.toBe(rebaseHead)
+
+    git(seededRepoPath, ['checkout', '-q', defaultBranch])
+    const cherryResult = await runGraphAction(orcaPage, seededRepoPath, {
+      kind: 'cherryPick',
+      commit: cherrySource,
+      noCommit: false,
+      recordOrigin: false
+    })
+    if (!cherryResult.ok) {
+      throw new Error(`cherry-pick failed: ${cherryResult.code}: ${cherryResult.message}`)
+    }
+    expect(git(seededRepoPath, ['log', '-1', '--format=%s'])).toBe('cherry source')
+
+    const cherryHead = git(seededRepoPath, ['rev-parse', 'HEAD'])
+    const revertResult = await runGraphAction(orcaPage, seededRepoPath, {
+      kind: 'revert',
+      commit: cherryHead
+    })
+    expect(revertResult).toMatchObject({ ok: true })
+    expect(git(seededRepoPath, ['log', '-1', '--format=%s'])).toContain('Revert')
+
+    const beforeDrop = git(seededRepoPath, ['rev-parse', 'HEAD'])
+    const dropResult = await runGraphAction(orcaPage, seededRepoPath, {
+      kind: 'dropCommit',
+      commit: beforeDrop
+    })
+    expect(dropResult).toMatchObject({ ok: true })
+    expect(git(seededRepoPath, ['rev-parse', 'HEAD'])).not.toBe(beforeDrop)
   } finally {
     try {
-      if (git(seededRepoPath, ['rev-parse', '--verify', '--quiet', 'MERGE_HEAD'])) {
+      if (git(seededRepoPath, ['rev-parse', '--verify', 'MERGE_HEAD'])) {
         git(seededRepoPath, ['merge', '--abort'])
       }
     } catch {
