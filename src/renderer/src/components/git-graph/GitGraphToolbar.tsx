@@ -1,5 +1,5 @@
 import React from 'react'
-import { GitBranch, RefreshCw } from 'lucide-react'
+import { Eye, EyeOff, GitBranch, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
@@ -16,6 +16,8 @@ export function GitGraphToolbar({
   hasWorkingTreeChanges,
   actionBusy,
   stashCount,
+  stashesVisible,
+  onToggleStashes,
   backupCount,
   onFetch,
   onPull,
@@ -36,6 +38,8 @@ export function GitGraphToolbar({
   hasWorkingTreeChanges: boolean
   actionBusy: boolean
   stashCount: number
+  stashesVisible: boolean
+  onToggleStashes: () => void
   backupCount: number
   onFetch: () => void
   onPull: () => void
@@ -89,9 +93,24 @@ export function GitGraphToolbar({
         </Button>
       )}
       {stashCount > 0 && (
-        <Button type="button" variant="ghost" size="sm" onClick={onStashes}>
-          {translate('auto.components.git.graph.aux.stashes', 'Stashes')} {stashCount}
-        </Button>
+        <>
+          <Button type="button" variant="ghost" size="sm" onClick={onStashes}>
+            {translate('auto.components.git.graph.aux.stashes', 'Stashes')} {stashCount}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-pressed={stashesVisible}
+            aria-label={translate(
+              'auto.components.git.graph.aux.toggleStashRows',
+              'Toggle stash rows'
+            )}
+            onClick={onToggleStashes}
+          >
+            {stashesVisible ? <Eye /> : <EyeOff />}
+          </Button>
+        </>
       )}
       {backupCount > 0 && (
         <Button type="button" variant="ghost" size="sm" onClick={onBackups}>

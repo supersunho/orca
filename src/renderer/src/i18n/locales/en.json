@@ -17613,7 +17613,8 @@
             "openDiff": "Open commit diff",
             "compareFailed": "Comparison failed.",
             "loadingFiles": "Loading files...",
-            "noFiles": "No changed files."
+            "noFiles": "No changed files.",
+            "statusReadError": "Could not read working tree status: {{value0}}"
           },
           "row": {
             "worktreeHead": "Worktree HEAD: {{value0}}",
@@ -17703,7 +17704,9 @@
             "confirmRestore": "Confirm restore",
             "restore": "Restore",
             "uncommittedChanges": "Uncommitted changes ({{value0}})",
-            "stashPrefix": "stash@"
+            "stashPrefix": "stash@",
+            "uncommittedChangesCapped": "Uncommitted changes ({{value0}}+)",
+            "toggleStashRows": "Toggle stash rows"
           },
           "remote": {
             "title": "Remotes",

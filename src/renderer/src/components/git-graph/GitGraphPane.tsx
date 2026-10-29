@@ -18,6 +18,7 @@ import { GitGraphAuxRefsDialog } from './GitGraphAuxRefsDialog'
 import { GitGraphRemoteDialog } from './GitGraphRemoteDialog'
 import { GitGraphSyncDialog } from './GitGraphSyncDialog'
 import { GitGraphConflictBanner } from './GitGraphConflictBanner'
+import { GitGraphStatusErrorBanner } from './GitGraphStatusErrorBanner'
 import { GitGraphDetailsPanel } from './GitGraphDetailsPanel'
 import { GitGraphToolbar } from './GitGraphToolbar'
 import { useGitGraphActions } from './useGitGraphActions'
@@ -71,6 +72,7 @@ export default function GitGraphPane({
   const [auxDialog, setAuxDialog] = useState<'stashes' | 'backups' | null>(null)
   const [remoteOpen, setRemoteOpen] = useState(false)
   const [pendingSync, setPendingSync] = useState<'pull' | 'push' | null>(null)
+  const [showStashRows, setShowStashRows] = useState(true)
   const openCommitDiff = useAppStore((state) => state.openCommitDiff)
   const openCommitAllDiffs = useAppStore((state) => state.openCommitAllDiffs)
   const openConflictReview = useAppStore((state) => state.openConflictReview)
@@ -97,15 +99,20 @@ export default function GitGraphPane({
     }
   })
 
-  const { worktreeStatus, conflictEntries, hasWorkingTreeChanges, workingTreeChangeCount } =
-    useGitGraphWorktreeStatus({
-      worktreeId,
-      worktreePath: worktree?.path ?? null,
-      ownerTarget,
-      refreshKey: result,
-      conflict
-    })
-
+  const {
+    worktreeStatus,
+    conflictEntries,
+    hasWorkingTreeChanges,
+    workingTreeChangeCount,
+    statusCapped,
+    statusReadError
+  } = useGitGraphWorktreeStatus({
+    worktreeId,
+    worktreePath: worktree?.path ?? null,
+    ownerTarget,
+    refreshKey: result,
+    conflict
+  })
   const { singleSelected, files, filesStatus, filesError, rangeCompare } =
     useGitGraphCommitSelection({
       selectedIds,
@@ -196,6 +203,8 @@ export default function GitGraphPane({
         hasWorkingTreeChanges={hasWorkingTreeChanges}
         actionBusy={actionBusy}
         stashCount={auxRefs.stashes.length}
+        stashesVisible={showStashRows}
+        onToggleStashes={() => setShowStashRows((visible) => !visible)}
         backupCount={auxRefs.backups.length}
         onFetch={() => void runSync('fetch')}
         onPull={() => setPendingSync('pull')}
@@ -238,6 +247,8 @@ export default function GitGraphPane({
         </div>
       )}
 
+      {statusReadError && <GitGraphStatusErrorBanner message={statusReadError} />}
+
       {conflict && (
         <GitGraphConflictBanner
           conflict={conflict}
@@ -268,24 +279,26 @@ export default function GitGraphPane({
             {worktreeStatus && hasWorkingTreeChanges && (
               <GitGraphUncommittedRow
                 changeCount={workingTreeChangeCount}
+                statusCapped={statusCapped}
                 busy={actionBusy}
                 onStash={requestStash}
               />
             )}
-            {auxRefs.stashes.map((stash) => (
-              <GitGraphStashRow
-                key={stash.oid}
-                stash={stash}
-                busy={actionBusy}
-                onApply={() =>
-                  void runAction({
-                    kind: 'stashApply',
-                    index: stash.index,
-                    reinstateIndex: false
-                  })
-                }
-              />
-            ))}
+            {showStashRows &&
+              auxRefs.stashes.map((stash) => (
+                <GitGraphStashRow
+                  key={stash.oid}
+                  stash={stash}
+                  busy={actionBusy}
+                  onApply={() =>
+                    void runAction({
+                      kind: 'stashApply',
+                      index: stash.index,
+                      reinstateIndex: false
+                    })
+                  }
+                />
+              ))}
             {status === 'loading' && !result && (
               <div className="p-4 text-xs text-muted-foreground">
                 {translate('auto.components.git.graph.pane.loading', 'Loading graph...')}
@@ -297,7 +310,8 @@ export default function GitGraphPane({
             {result &&
               result.items.length === 0 &&
               !hasWorkingTreeChanges &&
-              auxRefs.stashes.length === 0 && (
+              !statusReadError &&
+              (!showStashRows || auxRefs.stashes.length === 0) && (
                 <div className="p-4 text-xs text-muted-foreground">
                   {translate('auto.components.git.graph.pane.empty', 'No commits found.')}
                 </div>

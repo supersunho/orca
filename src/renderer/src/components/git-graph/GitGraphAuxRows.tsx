@@ -6,10 +6,12 @@ import type { GitGraphStash } from '../../../../shared/git-graph-actions'
 
 export function GitGraphUncommittedRow({
   changeCount,
+  statusCapped = false,
   busy = false,
   onStash
 }: {
   changeCount: number
+  statusCapped?: boolean
   busy?: boolean
   onStash: () => void
 }): React.JSX.Element {
@@ -23,11 +25,17 @@ export function GitGraphUncommittedRow({
         <CircleDot className="size-3.5 text-annotation-highlight" />
       </span>
       <span className="min-w-0 flex-1 truncate">
-        {translate(
-          'auto.components.git.graph.aux.uncommittedChanges',
-          'Uncommitted changes ({{value0}})',
-          { value0: String(changeCount) }
-        )}
+        {statusCapped
+          ? translate(
+              'auto.components.git.graph.aux.uncommittedChangesCapped',
+              'Uncommitted changes ({{value0}}+)',
+              { value0: String(changeCount) }
+            )
+          : translate(
+              'auto.components.git.graph.aux.uncommittedChanges',
+              'Uncommitted changes ({{value0}})',
+              { value0: String(changeCount) }
+            )}
       </span>
       <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onStash}>
         {translate('auto.components.git.graph.sync.stash', 'Stash')}

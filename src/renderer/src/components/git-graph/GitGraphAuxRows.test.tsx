@@ -41,6 +41,14 @@ describe('Git Graph auxiliary rows', () => {
     expect(onApply).toHaveBeenCalledTimes(1)
   })
 
+  it('labels a capped uncommitted count as a lower bound', () => {
+    const { getByText } = render(
+      <GitGraphUncommittedRow changeCount={1001} statusCapped onStash={vi.fn()} />
+    )
+
+    expect(getByText('Uncommitted changes (1001+)')).toBeTruthy()
+  })
+
   it('disables actions while another graph action runs', () => {
     const { getByRole } = render(<GitGraphStashRow stash={stash} busy onApply={vi.fn()} />)
 
