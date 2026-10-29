@@ -7,7 +7,8 @@ import { useGitHistoryCommitActions } from '../right-sidebar/source-control/sync
 import type { GitHistoryItem, GitHistoryItemRef } from '../../../../shared/git-history'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
 import type { GitGraphAction } from '../../../../shared/git-graph-actions'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import { isFolderGitGraphWorkspace } from './git-graph-folder-workspace'
+import { shortRefName } from './git-graph-row-refs'
 import { Button } from '@/components/ui/button'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
@@ -34,10 +35,6 @@ import { useGitGraphRangeActions } from './useGitGraphRangeActions'
 import { useGitGraphMenuHandlers } from './useGitGraphMenuHandlers'
 import { useGitGraphSync } from './useGitGraphSync'
 
-function shortRefName(ref: string): string {
-  return ref.replace(/^refs\/(?:heads|remotes|tags)\//, '')
-}
-
 export default function GitGraphPane({
   worktreeId,
   executionHostId
@@ -47,6 +44,9 @@ export default function GitGraphPane({
 }): React.JSX.Element {
   const worktree = useWorktreeById(worktreeId, executionHostId)
   const ownerTarget = useWorktreeGitOwnerTarget(worktreeId)
+  const isFolderWorkspace = isFolderGitGraphWorkspace(worktree, worktreeId)
+  const gitWorktreePath = isFolderWorkspace ? null : (worktree?.path ?? null)
+  const gitOwnerTarget = isFolderWorkspace ? null : ownerTarget
   const worktreesByRepo = useAppStore(selectWorktreesByRepo)
   const worktrees = useMemo(() => Object.values(worktreesByRepo ?? {}).flat(), [worktreesByRepo])
   const {
@@ -61,13 +61,13 @@ export default function GitGraphPane({
     loadMore
   } = useGitGraphHistory({
     worktreeId,
-    worktreePath: worktree?.path ?? null,
-    ownerTarget
+    worktreePath: gitWorktreePath,
+    ownerTarget: gitOwnerTarget
   })
   const auxRefs = useGitGraphAuxRefs({
     worktreeId,
-    worktreePath: worktree?.path ?? null,
-    ownerTarget,
+    worktreePath: gitWorktreePath,
+    ownerTarget: gitOwnerTarget,
     refreshKey: result
   })
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -82,8 +82,8 @@ export default function GitGraphPane({
 
   const { loadCommitFiles, openHistoryCommitDiff, openCommitFile } = useGitHistoryCommitActions({
     activeWorktreeId: worktreeId,
-    worktreePath: worktree?.path ?? null,
-    activeRepoTarget: ownerTarget,
+    worktreePath: gitWorktreePath,
+    activeRepoTarget: gitOwnerTarget,
     resolveSplitTargetGroupId: () => undefined
   })
 
@@ -94,8 +94,8 @@ export default function GitGraphPane({
     clearConflict
   } = useGitGraphActions({
     worktreeId,
-    worktreePath: worktree?.path ?? null,
-    ownerTarget,
+    worktreePath: gitWorktreePath,
+    ownerTarget: gitOwnerTarget,
     onCompleted: () => {
       refresh()
       setSelectedIds([])
@@ -111,8 +111,8 @@ export default function GitGraphPane({
     statusReadError
   } = useGitGraphWorktreeStatus({
     worktreeId,
-    worktreePath: worktree?.path ?? null,
-    ownerTarget,
+    worktreePath: gitWorktreePath,
+    ownerTarget: gitOwnerTarget,
     refreshKey: result,
     conflict
   })
@@ -122,8 +122,8 @@ export default function GitGraphPane({
       result,
       loadCommitFiles,
       worktreeId,
-      worktreePath: worktree?.path ?? null,
-      ownerTarget
+      worktreePath: gitWorktreePath,
+      ownerTarget: gitOwnerTarget
     })
 
   const { worktreeHeads, viewModels } = useGitGraphViewModels({ worktrees, result })
@@ -155,7 +155,7 @@ export default function GitGraphPane({
   const { openRangeFile, openRangeDiff } = useGitGraphRangeActions({
     rangeCompare,
     worktreeId,
-    worktreePath: worktree?.path ?? null,
+    worktreePath: gitWorktreePath,
     openCommitDiff,
     openCommitAllDiffs
   })
@@ -164,8 +164,8 @@ export default function GitGraphPane({
 
   const { syncBusy, runSync } = useGitGraphSync({
     worktreeId,
-    worktreePath: worktree?.path ?? null,
-    ownerTarget,
+    worktreePath: gitWorktreePath,
+    ownerTarget: gitOwnerTarget,
     onCompleted: refresh
   })
 
@@ -192,7 +192,7 @@ export default function GitGraphPane({
     worktree?.path ||
     ''
 
-  if (worktree && parseWorkspaceKey(worktree.id)?.type === 'folder') {
+  if (isFolderWorkspace) {
     return <GitGraphFolderEmpty />
   }
 
