@@ -152,7 +152,7 @@ describe('runGitGraphAction real git', () => {
     }
     expect(result.code).toBe('conflict')
     expect(result.conflict).toBe('rebase')
-    expect(result.backupRef).toMatch(/^refs\/orca\/backup\/\d+-feature-[0-9a-f]{8}$/)
+    expect(result.backupRef).toMatch(/^refs\/orca\/backup\/\d+-feature-[0-9a-f-]{36}$/)
     const backupRef = result.backupRef
     if (!backupRef) {
       throw new Error('expected a backup ref')

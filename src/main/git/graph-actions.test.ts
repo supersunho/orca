@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GitGraphAction } from '../../shared/git-graph-actions'
 import type * as RunnerModule from './runner'
 import { runGitGraphAction } from './graph-actions'
-import { backupCases, backupFailureCases } from './graph-actions-backup-cases'
+import { backupCases, backupFailureCases } from './graph-actions-backup.test-fixture'
 import { gitExecFileAsync } from './runner'
 
 vi.mock('./runner', async (importOriginal) => {
@@ -46,6 +46,12 @@ function ok(stdout = ''): GitReply {
   return { stdout, stderr: '' }
 }
 
+const TEST_HEAD_OID = 'a'.repeat(40)
+
+function isBackupHeadQuery(args: string[]): boolean {
+  return args[0] === 'rev-parse' && args[1] === '--verify' && args[2] === 'HEAD^{commit}'
+}
+
 function execError(stderr: string): Error & { stderr: string } {
   return Object.assign(new Error(stderr), { stderr })
 }
@@ -71,7 +77,9 @@ function installGitHandler(handler?: GitHandler): void {
       case 'worktree':
         return ok()
       case 'rev-parse':
-        return ok('abc123\n')
+        return args[1] === '--verify' && args[2] === 'HEAD^{commit}'
+          ? ok(`${'a'.repeat(40)}\n`)
+          : ok('abc123\n')
       default:
         return ok()
     }
@@ -566,22 +574,23 @@ describe('runGitGraphAction backup refs', () => {
     const result = await runGitGraphAction(worktree, action)
 
     expect(result).toMatchObject({ ok: true })
-    expect(result.ok && result.backupRef).toMatch(/^refs\/orca\/backup\/\d+-main-[0-9a-f]{8}$/)
+    expect(result.ok && result.backupRef).toMatch(/^refs\/orca\/backup\/\d+-main-[0-9a-f-]{36}$/)
     expect(calls).toContainEqual([
       'update-ref',
-      expect.stringMatching(/^refs\/orca\/backup\/\d+-main-[0-9a-f]{8}$/),
-      'HEAD',
+      expect.stringMatching(/^refs\/orca\/backup\/\d+-main-[0-9a-f-]{36}$/),
+      'a'.repeat(40),
       '0'.repeat(40)
     ])
   })
 
-  it('uses the repository object-format width for the create-only guard', async () => {
+  it('uses the resolved HEAD OID width for the create-only guard', async () => {
+    const headOid = 'b'.repeat(64)
     installGitHandler((args) => {
       if (args[0] === 'symbolic-ref') {
         return ok('main\n')
       }
-      if (args[0] === 'rev-parse' && args[1] === '--show-object-format') {
-        return ok('sha256\n')
+      if (args[0] === 'rev-parse' && args[1] === '--verify' && args[2] === 'HEAD^{commit}') {
+        return ok(`${headOid}\n`)
       }
       return ok()
     })
@@ -596,10 +605,34 @@ describe('runGitGraphAction backup refs', () => {
 
     expect(calls).toContainEqual([
       'update-ref',
-      expect.stringMatching(/^refs\/orca\/backup\/\d+-main-[0-9a-f]{8}$/),
-      'HEAD',
+      expect.stringMatching(/^refs\/orca\/backup\/\d+-main-[0-9a-f-]{36}$/),
+      headOid,
       '0'.repeat(64)
     ])
+  })
+
+  it('refuses the action when HEAD does not resolve to a full OID', async () => {
+    installGitHandler((args) => {
+      if (args[0] === 'rev-parse' && args[1] === '--verify' && args[2] === 'HEAD^{commit}') {
+        return ok('not-an-oid\n')
+      }
+      return ok()
+    })
+
+    const result = await runGitGraphAction(worktree, {
+      kind: 'merge',
+      target: 'main',
+      noFastForward: false,
+      squash: false,
+      noCommit: false
+    })
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: 'preflight',
+      message: 'Could not resolve HEAD for the backup ref.'
+    })
+    expect(calls.some((args) => args[0] === 'merge')).toBe(false)
   })
 
   it('does not create a backup ref for checkout or tags', async () => {
@@ -648,6 +681,9 @@ describe('runGitGraphAction backup refs', () => {
 describe('runGitGraphAction failure mapping', () => {
   it('maps a conflicted merge to the conflict code and detected operation', async () => {
     installGitHandler(async (args) => {
+      if (isBackupHeadQuery(args)) {
+        return ok(`${TEST_HEAD_OID}\n`)
+      }
       if (args[0] === 'merge') {
         await mkdir(join(worktree, '.git'), { recursive: true })
         await writeFile(join(worktree, '.git', 'MERGE_HEAD'), 'abc\n')
@@ -675,6 +711,9 @@ describe('runGitGraphAction failure mapping', () => {
 
   it('maps a conflicted rebase by stderr when no marker is readable', async () => {
     installGitHandler((args) => {
+      if (isBackupHeadQuery(args)) {
+        return ok(`${TEST_HEAD_OID}\n`)
+      }
       if (args[0] === 'rebase') {
         throw execError('error: could not apply 123abc... change\nResolve all conflicts manually')
       }
@@ -692,6 +731,9 @@ describe('runGitGraphAction failure mapping', () => {
 
   it('maps a conflicted cherry-pick to the conflict code', async () => {
     installGitHandler((args) => {
+      if (isBackupHeadQuery(args)) {
+        return ok(`${TEST_HEAD_OID}\n`)
+      }
       if (args[0] === 'cherry-pick') {
         throw execError('CONFLICT (content): Merge conflict in file.ts')
       }
@@ -741,6 +783,9 @@ describe('runGitGraphAction failure mapping', () => {
 
   it('maps other git failures to git-error and keeps the backup ref', async () => {
     installGitHandler((args) => {
+      if (isBackupHeadQuery(args)) {
+        return ok(`${TEST_HEAD_OID}\n`)
+      }
       if (args[0] === 'reset') {
         throw execError('fatal: bad revision')
       }
@@ -764,6 +809,9 @@ describe('runGitGraphAction failure mapping', () => {
 describe('dropCommit planning', () => {
   it('rebases later commits onto the dropped commit parent', async () => {
     installGitHandler((args) => {
+      if (isBackupHeadQuery(args)) {
+        return ok(`${TEST_HEAD_OID}\n`)
+      }
       if (args[0] === 'symbolic-ref') {
         return ok('main\n')
       }
@@ -790,6 +838,9 @@ describe('dropCommit planning', () => {
 
   it('drops HEAD with a mixed reset', async () => {
     installGitHandler((args) => {
+      if (isBackupHeadQuery(args)) {
+        return ok(`${TEST_HEAD_OID}\n`)
+      }
       if (args[0] === 'symbolic-ref') {
         return ok('main\n')
       }

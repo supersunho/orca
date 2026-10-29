@@ -89,15 +89,21 @@ async function createBackupRef(
   options: GitRuntimeOptions
 ): Promise<BackupOutcome> {
   const timestamp = Date.now()
-  const suffix = randomUUID().slice(0, 8)
+  const suffix = randomUUID()
   const ref = `${BACKUP_REF_PREFIX}${timestamp}-${safeBranchComponent(branchState.current)}-${suffix}`
   try {
     const { stdout } = await gitExecFileAsync(
-      ['rev-parse', '--show-object-format'],
+      ['rev-parse', '--verify', 'HEAD^{commit}'],
       execOptions(worktreePath, options)
     )
-    const zeroOid = '0'.repeat(stdout.trim() === 'sha256' ? 64 : 40)
-    await gitExecFileAsync(['update-ref', ref, 'HEAD', zeroOid], execOptions(worktreePath, options))
+    const headOid = stdout.trim()
+    if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(headOid)) {
+      return { ok: false, message: 'Could not resolve HEAD for the backup ref.' }
+    }
+    await gitExecFileAsync(
+      ['update-ref', ref, headOid, '0'.repeat(headOid.length)],
+      execOptions(worktreePath, options)
+    )
     return { ok: true, backup: { ref } }
   } catch (error) {
     const { stderr } = extractExecError(error)
