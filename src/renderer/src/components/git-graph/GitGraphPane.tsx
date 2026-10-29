@@ -340,7 +340,7 @@ export default function GitGraphPane({
                   variant="outline"
                   size="sm"
                   className="w-full"
-                  disabled={status === 'refreshing'}
+                  disabled={status === 'loading' || status === 'refreshing'}
                   onClick={() => void loadMore()}
                 >
                   {translate('auto.components.git.graph.pane.loadMore', 'Load more commits')}

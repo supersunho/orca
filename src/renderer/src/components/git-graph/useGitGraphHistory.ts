@@ -94,7 +94,7 @@ export function useGitGraphHistory({
   }, [worktreePath, ownerTarget, worktreeId, search, refFilter, refreshToken])
 
   const loadMore = useCallback(async () => {
-    if (!result?.hasMore || !worktreePath || !ownerTarget) {
+    if (status !== 'idle' || !result?.hasMore || !worktreePath || !ownerTarget) {
       return
     }
     const remaining = MAX_LOADED_COMMITS - result.items.length
@@ -147,7 +147,7 @@ export function useGitGraphHistory({
         loadMoreAbortRef.current = null
       }
     }
-  }, [ownerTarget, refFilter, result, search, worktreeId, worktreePath])
+  }, [ownerTarget, refFilter, result, search, status, worktreeId, worktreePath])
 
   const refresh = useCallback(() => setRefreshToken((token) => token + 1), [])
 

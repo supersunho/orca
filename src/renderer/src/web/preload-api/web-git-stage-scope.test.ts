@@ -28,7 +28,7 @@ describe('web client git history', () => {
       scope: 'all-refs'
     })
 
-    await createGitApi().history!({
+    const history = await createGitApi().history!({
       worktreePath: '/repo',
       allRefs: true,
       refFilter: ['refs/heads/main', 'refs/tags/v1'],
@@ -37,6 +37,7 @@ describe('web client git history', () => {
       skip: 100
     })
 
+    expect(history.scope).toBe('all-refs')
     expect(callRuntimeResult).toHaveBeenCalledWith('git.history', {
       worktree: 'id:wt-1',
       allRefs: true,

@@ -87,7 +87,7 @@ describe('git:history local IPC boundary', () => {
   it('preserves allRefs, refFilter, search, and paging for the loader', async () => {
     const handler = getHistoryHandler()
 
-    await handler(
+    const history = await handler(
       {},
       {
         worktreePath: '/repo',
@@ -99,6 +99,7 @@ describe('git:history local IPC boundary', () => {
       }
     )
 
+    expect(history).toMatchObject({ scope: 'all-refs' })
     expect(mocks.resolveRegisteredWorktreePath).toHaveBeenCalledWith('/repo', mocks.store)
     expect(mocks.getHistory).toHaveBeenCalledWith('/repo', {
       allRefs: true,
@@ -106,6 +107,23 @@ describe('git:history local IPC boundary', () => {
       search: 'fix',
       limit: 300,
       skip: 100,
+      admissionTier: 'interactive'
+    })
+  })
+
+  it('drops flag-like and short ref filters before the loader', async () => {
+    await getHistoryHandler()(
+      {},
+      {
+        worktreePath: '/repo',
+        allRefs: true,
+        refFilter: ['--all', 'main', 'refs/heads/main', 'refs/heads/main']
+      }
+    )
+
+    expect(mocks.getHistory).toHaveBeenCalledWith('/repo', {
+      allRefs: true,
+      refFilter: ['refs/heads/main'],
       admissionTier: 'interactive'
     })
   })
