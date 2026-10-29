@@ -2,7 +2,7 @@ import type { ElectronApplication, Page } from '@stablyai/playwright-test'
 import { expect, test } from './helpers/orca-app'
 import { createRestartSession } from './helpers/orca-restart'
 import { ensureTerminalVisible, waitForSessionReady } from './helpers/store'
-import type { GitGraphActionResult } from '../../src/shared/git-graph-actions'
+import type { GitGraphAction, GitGraphActionResult } from '../../src/shared/git-graph-actions'
 import {
   cleanupDockerSshHostTarget,
   DOCKER_SSH_HOST_REMOTE_REPO_PATH,
@@ -22,6 +22,28 @@ function assertGitGraphActionResult(value: unknown): asserts value is GitGraphAc
   ) {
     throw new Error('git.graphAction returned an invalid result')
   }
+}
+
+async function runRemoteGraphAction(
+  page: Page,
+  environmentId: string,
+  worktreeId: string,
+  action: GitGraphAction
+): Promise<GitGraphActionResult> {
+  const response = await page.evaluate(
+    async ({ environmentId, worktreeId, action }) =>
+      window.api.runtimeEnvironments.call({
+        selector: environmentId,
+        method: 'git.graphAction',
+        params: { worktree: `id:${worktreeId}`, action }
+      }),
+    { environmentId, worktreeId, action }
+  )
+  if (!response.ok) {
+    throw new Error(`SSH graph action failed: ${JSON.stringify(response.error)}`)
+  }
+  assertGitGraphActionResult(response.result)
+  return response.result
 }
 
 async function connectManagedHost(
@@ -93,54 +115,41 @@ async function resolveRemoteWorktree(
 async function openGitGraphTab(page: Page, worktreeId: string): Promise<void> {
   await expect
     .poll(
-      () =>
-        page.evaluate(
-          (id) => Boolean(window.__store?.getState().groupsByWorktree[id]?.length),
-          worktreeId
-        ),
-      { timeout: 30_000 }
+      async () => {
+        await page.evaluate((targetWorktreeId) => {
+          const store = window.__store
+          if (!store) {
+            return
+          }
+          const state = store.getState()
+          const targetGroupId =
+            state.activeGroupIdByWorktree[targetWorktreeId] ??
+            state.groupsByWorktree[targetWorktreeId]?.[0]?.id
+          if (!targetGroupId) {
+            return
+          }
+          const existing = (state.unifiedTabsByWorktree[targetWorktreeId] ?? []).find(
+            (tab) => tab.contentType === 'git-graph'
+          )
+          const worktree = Object.values(state.worktreesByRepo)
+            .flat()
+            .find((candidate) => candidate.id === targetWorktreeId)
+          const tab =
+            existing ??
+            state.createUnifiedTab(targetWorktreeId, 'git-graph', {
+              label: 'Git Graph',
+              targetGroupId,
+              activate: true,
+              ...(worktree?.hostId ? { executionHostId: worktree.hostId } : {})
+            })
+          store.getState().activateTab(tab.id)
+          store.getState().setActiveTabType('git-graph', targetWorktreeId)
+        }, worktreeId)
+        return page.getByRole('button', { name: 'Git Graph view settings' }).isVisible()
+      },
+      { timeout: 60_000, intervals: [500, 1_000, 2_000] }
     )
     .toBe(true)
-  await page.evaluate((targetWorktreeId) => {
-    const store = window.__store
-    if (!store) {
-      throw new Error('store unavailable')
-    }
-    const state = store.getState()
-    const targetGroupId =
-      state.activeGroupIdByWorktree[targetWorktreeId] ??
-      state.groupsByWorktree[targetWorktreeId]?.[0]?.id
-    if (!targetGroupId) {
-      throw new Error('no tab group for worktree')
-    }
-    const worktree = Object.values(state.worktreesByRepo)
-      .flat()
-      .find((candidate) => candidate.id === targetWorktreeId)
-    const tab = state.createUnifiedTab(targetWorktreeId, 'git-graph', {
-      label: 'Git Graph',
-      targetGroupId,
-      activate: true,
-      ...(worktree?.hostId ? { executionHostId: worktree.hostId } : {})
-    })
-    store.getState().activateTab(tab.id)
-    store.getState().setActiveTabType('git-graph', targetWorktreeId)
-  }, worktreeId)
-  await expect
-    .poll(
-      () =>
-        page.evaluate(
-          (id) =>
-            (window.__store?.getState().unifiedTabsByWorktree[id] ?? []).some(
-              (tab) => tab.contentType === 'git-graph'
-            ),
-          worktreeId
-        ),
-      { timeout: 30_000, message: 'Git Graph tab was not retained in the store' }
-    )
-    .toBe(true)
-  await expect(page.getByRole('button', { name: 'Git Graph view settings' })).toBeVisible({
-    timeout: 30_000
-  })
   await expect(page.locator('[data-testid="git-graph-row"]').first()).toBeVisible({
     timeout: 30_000
   })
@@ -184,38 +193,45 @@ test('loads Git Graph history from a managed SSH runtime repo', async ({}, testI
       timeout: 30_000
     })
 
-    const tagName = `e2e-graph-${Date.now()}`
-    const tagResult = await launched.page.evaluate(
-      async ({ environmentId, worktreeId, tagName }) =>
-        window.api.runtimeEnvironments.call({
-          selector: environmentId,
-          method: 'git.graphAction',
-          params: {
-            worktree: `id:${worktreeId}`,
-            action: {
-              kind: 'createTag',
-              name: tagName,
-              target: 'HEAD',
-              push: false
-            }
-          }
-        }),
-      { environmentId, worktreeId, tagName }
-    )
-    if (!tagResult.ok) {
-      throw new Error(`SSH tag action failed: ${JSON.stringify(tagResult.error)}`)
-    }
-    const actionResult = tagResult.result
-    assertGitGraphActionResult(actionResult)
-    if (!actionResult.ok) {
-      throw new Error(`SSH tag action rejected: ${actionResult.message}`)
-    }
-    expect(
+    const remoteGit = (args: string): string =>
       execDockerSshHostTargetCommand(
         target,
-        `git -C ${DOCKER_SSH_HOST_REMOTE_REPO_PATH} tag --list ${tagName}`
+        `git -C ${DOCKER_SSH_HOST_REMOTE_REPO_PATH} ${args}`
       ).trim()
-    ).toBe(tagName)
+
+    const tagName = `e2e-graph-${Date.now()}`
+    const tagResult = await runRemoteGraphAction(launched.page, environmentId, worktreeId, {
+      kind: 'createTag',
+      name: tagName,
+      target: 'HEAD',
+      push: false
+    })
+    if (!tagResult.ok) {
+      throw new Error(`SSH tag action rejected: ${tagResult.message}`)
+    }
+    expect(remoteGit(`tag --list ${tagName}`)).toBe(tagName)
+
+    const branchName = `e2e-branch-${Date.now()}`
+    const branchResult = await runRemoteGraphAction(launched.page, environmentId, worktreeId, {
+      kind: 'createBranch',
+      name: branchName,
+      startPoint: 'HEAD',
+      checkout: false
+    })
+    if (!branchResult.ok) {
+      throw new Error(`SSH branch create rejected: ${branchResult.message}`)
+    }
+    expect(remoteGit(`branch --list ${branchName}`)).toContain(branchName)
+
+    const deleteResult = await runRemoteGraphAction(launched.page, environmentId, worktreeId, {
+      kind: 'deleteBranch',
+      name: branchName,
+      force: false
+    })
+    if (!deleteResult.ok) {
+      throw new Error(`SSH branch delete rejected: ${deleteResult.message}`)
+    }
+    expect(remoteGit(`branch --list ${branchName}`)).toBe('')
   } finally {
     if (app) {
       await session.close(app)
