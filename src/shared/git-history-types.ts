@@ -7,6 +7,11 @@ export type GitHistoryGraphColorId =
   | 'git-graph-lane-3'
   | 'git-graph-lane-4'
   | 'git-graph-lane-5'
+  | 'git-graph-lane-6'
+  | 'git-graph-lane-7'
+  | 'git-graph-lane-8'
+  | 'git-graph-lane-9'
+  | 'git-graph-lane-10'
 
 export const GIT_HISTORY_REF_COLOR: GitHistoryGraphColorId = 'git-graph-ref'
 export const GIT_HISTORY_REMOTE_REF_COLOR: GitHistoryGraphColorId = 'git-graph-remote-ref'
@@ -17,7 +22,12 @@ export const GIT_HISTORY_LANE_COLORS: readonly GitHistoryGraphColorId[] = [
   'git-graph-lane-2',
   'git-graph-lane-3',
   'git-graph-lane-4',
-  'git-graph-lane-5'
+  'git-graph-lane-5',
+  'git-graph-lane-6',
+  'git-graph-lane-7',
+  'git-graph-lane-8',
+  'git-graph-lane-9',
+  'git-graph-lane-10'
 ]
 
 export const GIT_HISTORY_DEFAULT_LIMIT = 50

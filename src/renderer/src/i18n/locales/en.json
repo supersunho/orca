@@ -17619,7 +17619,8 @@
           "row": {
             "worktreeHead": "Worktree HEAD: {{value0}}",
             "head": "HEAD",
-            "filterRef": "{{value0}} — click to filter"
+            "filterRef": "{{value0}} — click to filter",
+            "actionContextHead": "Action Context HEAD: {{value0}}"
           },
           "dialog": {
             "title": "Git Graph action",

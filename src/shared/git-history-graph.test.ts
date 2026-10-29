@@ -14,6 +14,14 @@ import {
   getGitHistoryMergeParentLaneIndex
 } from './git-history-graph'
 
+describe('git graph lane palette', () => {
+  it('provides 8-12 lane colors', () => {
+    expect(GIT_HISTORY_LANE_COLORS.length).toBeGreaterThanOrEqual(8)
+    expect(GIT_HISTORY_LANE_COLORS.length).toBeLessThanOrEqual(12)
+    expect(new Set(GIT_HISTORY_LANE_COLORS).size).toBe(GIT_HISTORY_LANE_COLORS.length)
+  })
+})
+
 function item(
   id: string,
   parentIds: string[],

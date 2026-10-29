@@ -154,6 +154,11 @@
   --color-git-graph-lane-3: var(--git-graph-lane-3);
   --color-git-graph-lane-4: var(--git-graph-lane-4);
   --color-git-graph-lane-5: var(--git-graph-lane-5);
+  --color-git-graph-lane-6: var(--git-graph-lane-6);
+  --color-git-graph-lane-7: var(--git-graph-lane-7);
+  --color-git-graph-lane-8: var(--git-graph-lane-8);
+  --color-git-graph-lane-9: var(--git-graph-lane-9);
+  --color-git-graph-lane-10: var(--git-graph-lane-10);
   --color-annotation-highlight: var(--annotation-highlight);
   --shadow-floating: 0 10px 24px rgb(0 0 0 / 0.18);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -385,6 +390,11 @@
   --git-graph-lane-3: #ce9178;
   --git-graph-lane-4: #40b0a6;
   --git-graph-lane-5: #b66dff;
+  --git-graph-lane-6: #4dabf7;
+  --git-graph-lane-7: #51cf66;
+  --git-graph-lane-8: #ff922b;
+  --git-graph-lane-9: #845ef7;
+  --git-graph-lane-10: #f06595;
   --annotation-highlight: #fbbf24;
   --markdown-search-match: #facc15;
   --markdown-search-match-active: #fb923c;

@@ -7,6 +7,7 @@ import {
   GitHistoryGraphSvg,
   graphColor
 } from '../right-sidebar/source-control/sync/git-history-graph-svg'
+import { selectVisibleGraphRefs } from './git-graph-row-refs'
 
 function refCategoryLabel(ref: GitHistoryItemRef): string {
   return ref.category ? `${ref.name} (${ref.category})` : ref.name
@@ -15,6 +16,7 @@ function refCategoryLabel(ref: GitHistoryItemRef): string {
 export function GitGraphRow({
   viewModel,
   worktreeHeads,
+  actionContextHeadId = null,
   selected,
   activeRefFilter,
   onSelect,
@@ -22,6 +24,7 @@ export function GitGraphRow({
 }: {
   viewModel: GitHistoryItemViewModel
   worktreeHeads: ReadonlyMap<string, readonly string[]>
+  actionContextHeadId?: string | null
   selected: boolean
   activeRefFilter: readonly string[]
   onSelect: (item: GitHistoryItem, event?: React.MouseEvent) => void
@@ -29,9 +32,11 @@ export function GitGraphRow({
 }): React.JSX.Element {
   const item = viewModel.historyItem
   const heads = worktreeHeads.get(item.id) ?? []
-  const refs = item.references ?? []
-  const visibleRefs = refs.slice(0, 3)
-  const hiddenRefs = refs.slice(3)
+  const isActionContextHead = actionContextHeadId === item.id
+  const { visible: visibleRefs, hidden: hiddenRefs } = selectVisibleGraphRefs(
+    item.references ?? [],
+    activeRefFilter
+  )
   const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleDateString() : ''
 
   return (
@@ -61,12 +66,25 @@ export function GitGraphRow({
       <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
         {heads.length > 0 && (
           <span
-            className="shrink-0 rounded-sm bg-status-success-background px-1 py-0.5 text-[10px] font-medium text-status-success"
-            title={translate(
-              'auto.components.git.graph.row.worktreeHead',
-              'Worktree HEAD: {{value0}}',
-              { value0: heads.join(', ') }
+            className={cn(
+              'shrink-0 rounded-sm px-1 py-0.5 text-[10px] font-medium',
+              isActionContextHead
+                ? 'bg-status-success text-background ring-1 ring-status-success'
+                : 'bg-status-success-background text-status-success'
             )}
+            title={
+              isActionContextHead
+                ? translate(
+                    'auto.components.git.graph.row.actionContextHead',
+                    'Action Context HEAD: {{value0}}',
+                    { value0: heads.join(', ') }
+                  )
+                : translate(
+                    'auto.components.git.graph.row.worktreeHead',
+                    'Worktree HEAD: {{value0}}',
+                    { value0: heads.join(', ') }
+                  )
+            }
           >
             {translate('auto.components.git.graph.row.head', 'HEAD')}
           </span>

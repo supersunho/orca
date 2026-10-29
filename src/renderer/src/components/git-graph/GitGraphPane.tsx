@@ -317,6 +317,7 @@ export default function GitGraphPane({
                     <GitGraphRow
                       viewModel={viewModel}
                       worktreeHeads={worktreeHeads}
+                      actionContextHeadId={worktree?.head ?? null}
                       selected={selectedIds.includes(viewModel.historyItem.id)}
                       activeRefFilter={refFilter}
                       onSelect={selectCommit}
