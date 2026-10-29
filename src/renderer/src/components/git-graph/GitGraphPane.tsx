@@ -128,13 +128,6 @@ export default function GitGraphPane({
     })
 
   const { worktreeHeads, viewModels } = useGitGraphViewModels({ worktrees, result })
-  const displayedViewModels = useMemo(
-    () =>
-      viewSettings.muteMerges
-        ? viewModels.filter((viewModel) => viewModel.historyItem.parentIds.length <= 1)
-        : viewModels,
-    [viewModels, viewSettings.muteMerges]
-  )
 
   const toggleRefFilter = useCallback(
     (ref: GitHistoryItemRef) => {
@@ -291,7 +284,7 @@ export default function GitGraphPane({
             result={result}
             error={error}
             viewSettings={viewSettings}
-            viewModels={displayedViewModels}
+            viewModels={viewModels}
             worktreeHeads={worktreeHeads}
             actionContextHeadId={worktree?.head ?? null}
             selectedIds={selectedIds}

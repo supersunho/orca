@@ -37,6 +37,7 @@ export function GitGraphRow({
   const item = viewModel.historyItem
   const heads = worktreeHeads.get(item.id) ?? []
   const isActionContextHead = actionContextHeadId === item.id
+  const mutedMerge = viewSettings.muteMerges && item.parentIds.length > 1
   const { visible: visibleRefs, hidden: hiddenRefs } = selectVisibleGraphRefs(
     item.references ?? [],
     activeRefFilter
@@ -49,6 +50,7 @@ export function GitGraphRow({
       tabIndex={0}
       data-testid="git-graph-row"
       data-commit-id={item.id}
+      data-muted-merge={mutedMerge || undefined}
       aria-pressed={selected}
       onClick={(event) => onSelect(item, event)}
       onKeyDown={(event) => {
@@ -60,7 +62,8 @@ export function GitGraphRow({
       className={cn(
         'grid min-h-[28px] w-full min-w-0 cursor-pointer items-center gap-x-2 border-b border-border/40 px-2 py-0.5 text-xs outline-none',
         'hover:bg-accent/40 focus-visible:bg-accent/50',
-        selected && 'bg-accent/60'
+        selected && 'bg-accent/60',
+        mutedMerge && 'text-muted-foreground'
       )}
       style={{ gridTemplateColumns: gitGraphGridTemplate(viewSettings) }}
     >
