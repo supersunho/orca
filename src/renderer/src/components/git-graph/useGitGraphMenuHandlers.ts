@@ -1,20 +1,27 @@
 import React from 'react'
 import { translate } from '@/i18n/i18n'
-import type { GitGraphAction } from '../../../../shared/git-graph-actions'
 import type { GitGraphActionMenuHandlers } from './GitGraphActionMenu'
 import type { GitGraphDialogRequest } from './GitGraphActionDialog'
 
 export function useGitGraphMenuHandlers({
-  runAction,
   setDialogRequest,
   setSelectedIds
 }: {
-  runAction: (action: GitGraphAction) => Promise<unknown>
   setDialogRequest: (request: GitGraphDialogRequest | null) => void
   setSelectedIds: React.Dispatch<React.SetStateAction<string[]>>
 }): GitGraphActionMenuHandlers {
   return {
-    onCheckoutRef: (ref: string) => void runAction({ kind: 'checkout', branch: ref }),
+    onCheckoutRef: (ref: string) =>
+      setDialogRequest({
+        kind: 'confirm',
+        title: translate('auto.components.git.graph.menu.checkoutCommit', 'Checkout this commit'),
+        description: translate(
+          'auto.components.git.graph.dialog.checkoutDescription',
+          'Check out {{value0}}. A dirty working tree blocks the checkout.',
+          { value0: ref }
+        ),
+        action: { kind: 'checkout', branch: ref }
+      }),
     onCreateBranch: (startPoint: string) =>
       setDialogRequest({ kind: 'createBranch', startPoint, name: '', checkout: true }),
     onRenameBranch: (name: string) => setDialogRequest({ kind: 'renameBranch', name }),

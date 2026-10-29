@@ -188,7 +188,7 @@ export default function GitGraphPane({
     openCommitAllDiffs
   })
 
-  const menuHandlers = useGitGraphMenuHandlers({ runAction, setDialogRequest, setSelectedIds })
+  const menuHandlers = useGitGraphMenuHandlers({ setDialogRequest, setSelectedIds })
 
   const { syncBusy, runSync } = useGitGraphSync({
     worktreeId,
