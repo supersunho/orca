@@ -23,6 +23,26 @@ function assertGitGraphActionResult(value: unknown): asserts value is GitGraphAc
     throw new Error('git.graphAction returned an invalid result')
   }
 }
+async function runRemoteGitRpc(
+  page: Page,
+  environmentId: string,
+  worktreeId: string,
+  method: string,
+  params: Record<string, unknown> = {}
+): Promise<void> {
+  const response = await page.evaluate(
+    async ({ environmentId, worktreeId, method, params }) =>
+      window.api.runtimeEnvironments.call({
+        selector: environmentId,
+        method,
+        params: { worktree: `id:${worktreeId}`, ...params }
+      }),
+    { environmentId, worktreeId, method, params }
+  )
+  if (!response.ok) {
+    throw new Error(`${method} failed: ${JSON.stringify(response.error)}`)
+  }
+}
 
 async function runRemoteGraphAction(
   page: Page,
@@ -232,6 +252,71 @@ test('loads Git Graph history from a managed SSH runtime repo', async ({}, testI
       throw new Error(`SSH branch delete rejected: ${deleteResult.message}`)
     }
     expect(remoteGit(`branch --list ${branchName}`)).toBe('')
+
+    execDockerSshHostTargetCommand(
+      target,
+      `printf 'stash change\\n' >> ${DOCKER_SSH_HOST_REMOTE_REPO_PATH}/README.md`
+    )
+    const stashResult = await runRemoteGraphAction(launched.page, environmentId, worktreeId, {
+      kind: 'stashCreate',
+      includeUntracked: false
+    })
+    if (!stashResult.ok) {
+      throw new Error(`SSH stash create rejected: ${stashResult.message}`)
+    }
+    expect(remoteGit('stash list')).not.toBe('')
+    const applyResult = await runRemoteGraphAction(launched.page, environmentId, worktreeId, {
+      kind: 'stashApply',
+      index: 0,
+      reinstateIndex: false
+    })
+    if (!applyResult.ok) {
+      throw new Error(`SSH stash apply rejected: ${applyResult.message}`)
+    }
+    expect(remoteGit('status --porcelain')).toContain('README.md')
+    remoteGit('reset --hard HEAD')
+
+    const originPath = '/tmp/orca-e2e-origin.git'
+    execDockerSshHostTargetCommand(target, `rm -rf ${originPath} && git init --bare ${originPath}`)
+    remoteGit(`push ${originPath} HEAD:refs/heads/master`)
+    const remoteAddResult = await runRemoteGraphAction(launched.page, environmentId, worktreeId, {
+      kind: 'remoteAdd',
+      name: 'e2e-origin',
+      url: `file://${originPath}`
+    })
+    if (!remoteAddResult.ok) {
+      throw new Error(`SSH remote add rejected: ${remoteAddResult.message}`)
+    }
+    expect(remoteGit('remote')).toContain('e2e-origin')
+    await runRemoteGitRpc(launched.page, environmentId, worktreeId, 'git.fetch')
+    const seededBranch = remoteGit('branch --show-current')
+    expect(remoteGit('branch -r')).toContain(`e2e-origin/${seededBranch}`)
+    await runRemoteGitRpc(launched.page, environmentId, worktreeId, 'git.push', {
+      pushTarget: { remoteName: 'e2e-origin', branchName: seededBranch }
+    })
+    expect(
+      execDockerSshHostTargetCommand(target, `git -C ${originPath} log -1 --format=%s`).trim()
+    ).toBe('initial')
+    execDockerSshHostTargetCommand(
+      target,
+      `git clone ${originPath} /tmp/orca-e2e-origin-work && ` +
+        `cd /tmp/orca-e2e-origin-work && git config user.email e2e@test.local && ` +
+        `git config user.name e2e && printf 'remote change\\n' >> README.md && ` +
+        `git commit -am 'remote change' && git push origin ${seededBranch}`
+    )
+    remoteGit(`branch --set-upstream-to=e2e-origin/${seededBranch} ${seededBranch}`)
+    await runRemoteGitRpc(launched.page, environmentId, worktreeId, 'git.pull')
+    expect(remoteGit('log -1 --format=%s')).toBe('remote change')
+    const remoteRemoveResult = await runRemoteGraphAction(
+      launched.page,
+      environmentId,
+      worktreeId,
+      { kind: 'remoteRemove', name: 'e2e-origin' }
+    )
+    if (!remoteRemoveResult.ok) {
+      throw new Error(`SSH remote remove rejected: ${remoteRemoveResult.message}`)
+    }
+    expect(remoteGit('remote')).not.toContain('e2e-origin')
   } finally {
     if (app) {
       await session.close(app)
