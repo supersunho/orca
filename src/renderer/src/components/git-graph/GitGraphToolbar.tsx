@@ -155,7 +155,7 @@ export function GitGraphToolbar({
             {translate('auto.components.git.graph.toolbar.viewSettings', 'Git Graph view settings')}
           </TooltipContent>
         </Tooltip>
-        <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuLabel>
             {translate('auto.components.git.graph.toolbar.viewSettings', 'Git Graph view settings')}
           </DropdownMenuLabel>
