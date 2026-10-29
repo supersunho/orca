@@ -104,5 +104,20 @@ test.describe('Git Graph pane', () => {
         { timeout: 15_000 }
       )
       .toBe(tagName)
+
+    await row.click({ button: 'right' })
+    await orcaPage.getByRole('menuitem', { name: 'Create branch here' }).click()
+    const branchName = `e2e-ui-branch-${Date.now()}`
+    await orcaPage.getByLabel('Branch name').fill(branchName)
+    await orcaPage.getByRole('button', { name: 'Run' }).click()
+    await expect
+      .poll(
+        () =>
+          execFileSync('git', ['-C', seededRepoPath, 'branch', '--list', branchName], {
+            encoding: 'utf8'
+          }).trim(),
+        { timeout: 15_000 }
+      )
+      .toContain(branchName)
   })
 })
