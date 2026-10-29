@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GitGraphAction } from '../../shared/git-graph-actions'
 import type * as RunnerModule from './runner'
 import { runGitGraphAction } from './graph-actions'
+import { backupCases, backupFailureCases } from './graph-actions-backup-cases'
 import { gitExecFileAsync } from './runner'
 
 vi.mock('./runner', async (importOriginal) => {
@@ -561,33 +562,43 @@ describe('runGitGraphAction continuation', () => {
 })
 
 describe('runGitGraphAction backup refs', () => {
-  const backupCases: GitGraphAction[] = [
-    {
+  it.each(backupCases)('creates a backup ref before $kind', async (action) => {
+    const result = await runGitGraphAction(worktree, action)
+
+    expect(result).toMatchObject({ ok: true })
+    expect(result.ok && result.backupRef).toMatch(/^refs\/orca\/backup\/\d+-main-[0-9a-f]{8}$/)
+    expect(calls).toContainEqual([
+      'update-ref',
+      expect.stringMatching(/^refs\/orca\/backup\/\d+-main-[0-9a-f]{8}$/),
+      'HEAD',
+      '0'.repeat(40)
+    ])
+  })
+
+  it('uses the repository object-format width for the create-only guard', async () => {
+    installGitHandler((args) => {
+      if (args[0] === 'symbolic-ref') {
+        return ok('main\n')
+      }
+      if (args[0] === 'rev-parse' && args[1] === '--show-object-format') {
+        return ok('sha256\n')
+      }
+      return ok()
+    })
+
+    await runGitGraphAction(worktree, {
       kind: 'merge',
       target: 'main',
       noFastForward: false,
       squash: false,
       noCommit: false
-    },
-    { kind: 'rebase', onto: 'main', ignoreDate: false },
-    {
-      kind: 'cherryPick',
-      commit: 'abc123',
-      noCommit: false,
-      recordOrigin: false
-    },
-    { kind: 'reset', target: 'HEAD~1', mode: 'hard' }
-  ]
+    })
 
-  it.each(backupCases)('creates a backup ref before $kind', async (action) => {
-    const result = await runGitGraphAction(worktree, action)
-
-    expect(result).toMatchObject({ ok: true })
-    expect(result.ok && result.backupRef).toMatch(/^refs\/orca\/backup\/\d+-main$/)
     expect(calls).toContainEqual([
       'update-ref',
-      expect.stringMatching(/^refs\/orca\/backup\/\d+-main$/),
-      'HEAD'
+      expect.stringMatching(/^refs\/orca\/backup\/\d+-main-[0-9a-f]{8}$/),
+      'HEAD',
+      '0'.repeat(64)
     ])
   })
 
@@ -603,29 +614,35 @@ describe('runGitGraphAction backup refs', () => {
     expect(calls.some((args) => args[0] === 'update-ref')).toBe(false)
   })
 
-  it('refuses the action when the backup ref cannot be created', async () => {
-    installGitHandler((args) => {
-      if (args[0] === 'update-ref') {
-        throw execError('fatal: cannot lock ref')
-      }
-      return ok()
-    })
+  it.each(backupFailureCases)(
+    'refuses $name when the backup ref cannot be created',
+    async ({ action, forbiddenCommand }) => {
+      installGitHandler((args) => {
+        if (args[0] === 'update-ref') {
+          throw execError('fatal: cannot lock ref')
+        }
+        if (args[0] === 'symbolic-ref') {
+          return ok('main\n')
+        }
+        if (args[0] === 'rev-list') {
+          return ok(`${'a'.repeat(40)} ${'b'.repeat(40)}\n`)
+        }
+        if (args[0] === 'rev-parse') {
+          return ok(`${'a'.repeat(40)}\n`)
+        }
+        return ok()
+      })
 
-    const result = await runGitGraphAction(worktree, {
-      kind: 'merge',
-      target: 'main',
-      noFastForward: false,
-      squash: false,
-      noCommit: false
-    })
+      const result = await runGitGraphAction(worktree, action)
 
-    expect(result).toMatchObject({
-      ok: false,
-      code: 'preflight',
-      message: expect.stringContaining('Could not create a backup ref')
-    })
-    expect(calls.some((args) => args[0] === 'merge')).toBe(false)
-  })
+      expect(result).toMatchObject({
+        ok: false,
+        code: 'preflight',
+        message: expect.stringContaining('Could not create a backup ref')
+      })
+      expect(calls.some((args) => args[0] === forbiddenCommand)).toBe(false)
+    }
+  )
 })
 
 describe('runGitGraphAction failure mapping', () => {

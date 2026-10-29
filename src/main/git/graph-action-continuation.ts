@@ -32,6 +32,7 @@ export function needsBackup(action: GitGraphAction): boolean {
     action.kind === 'merge' ||
     action.kind === 'rebase' ||
     action.kind === 'cherryPick' ||
+    action.kind === 'revert' ||
     action.kind === 'reset' ||
     action.kind === 'dropCommit' ||
     action.kind === 'restoreBackup'

@@ -5,6 +5,7 @@ import type {
 } from '../../shared/git-graph-actions'
 
 export type BackupResult = { ref?: string }
+export type BackupOutcome = { ok: true; backup: BackupResult } | { ok: false; message: string }
 
 export function success(backup: BackupResult): GitGraphActionResult {
   return { ok: true, ...(backup.ref ? { backupRef: backup.ref } : {}) }

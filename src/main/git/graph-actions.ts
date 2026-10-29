@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { GitGraphAction, GitGraphActionResult } from '../../shared/git-graph-actions'
 import type { GitRuntimeOptions } from './git-runtime-options'
 import { extractExecError, gitExecFileAsync } from './runner'
@@ -12,7 +13,7 @@ import {
 } from './graph-action-worktree'
 import { buildActionPlan } from './graph-action-plan'
 import { formatGitMessage, mapGitFailure } from './graph-action-failure'
-import { failure, success, type BackupResult } from './graph-action-result'
+import { failure, success, type BackupOutcome } from './graph-action-result'
 
 export async function runGitGraphAction(
   worktreePath: string,
@@ -58,12 +59,13 @@ export async function runGitGraphAction(
       return failure('invalid-input', plan.message)
     }
 
-    const backup = needsBackup(action)
+    const backupOutcome: BackupOutcome = needsBackup(action)
       ? await createBackupRef(worktreePath, branchState, options)
-      : {}
-    if (backup instanceof Error) {
-      return failure('preflight', backup.message)
+      : { ok: true, backup: {} }
+    if (!backupOutcome.ok) {
+      return failure('preflight', backupOutcome.message)
     }
+    const backup = backupOutcome.backup
 
     try {
       await runWithGitReadCacheInvalidation(async () => {
@@ -85,17 +87,24 @@ async function createBackupRef(
   worktreePath: string,
   branchState: { current: string | null },
   options: GitRuntimeOptions
-): Promise<BackupResult | Error> {
+): Promise<BackupOutcome> {
   const timestamp = Date.now()
-  const ref = `${BACKUP_REF_PREFIX}${timestamp}-${safeBranchComponent(branchState.current)}`
+  const suffix = randomUUID().slice(0, 8)
+  const ref = `${BACKUP_REF_PREFIX}${timestamp}-${safeBranchComponent(branchState.current)}-${suffix}`
   try {
-    await gitExecFileAsync(['update-ref', ref, 'HEAD'], execOptions(worktreePath, options))
-    return { ref }
+    const { stdout } = await gitExecFileAsync(
+      ['rev-parse', '--show-object-format'],
+      execOptions(worktreePath, options)
+    )
+    const zeroOid = '0'.repeat(stdout.trim() === 'sha256' ? 64 : 40)
+    await gitExecFileAsync(['update-ref', ref, 'HEAD', zeroOid], execOptions(worktreePath, options))
+    return { ok: true, backup: { ref } }
   } catch (error) {
     const { stderr } = extractExecError(error)
-    return new Error(
-      `Could not create a backup ref before the action: ${formatGitMessage(stderr, 'unknown error')}`
-    )
+    return {
+      ok: false,
+      message: `Could not create a backup ref before the action: ${formatGitMessage(stderr, 'unknown error')}`
+    }
   }
 }
 

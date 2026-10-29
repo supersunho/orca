@@ -41,7 +41,16 @@ vi.mock('../../local-worktree-runtime-options', () => ({
   getLocalGitOptionsForRegisteredWorktree: mocks.getLocalGitOptionsForRegisteredWorktree
 }))
 
+import { createFilesystemHandlerContext } from '../filesystem-handler-context'
+import type { Store } from '../../../persistence/loading-store/store'
+import type { SenderScopedRequestCancellations } from '../../sender-scoped-request-cancellation'
 import { registerGitGraphActionHandlers } from './graph-action-handlers'
+
+const cancellations: SenderScopedRequestCancellations = {
+  begin: vi.fn(() => null),
+  finish: vi.fn(),
+  cancel: vi.fn()
+}
 
 function getGraphActionHandler(): Handler {
   const handler = mocks.handlers.get('git:graphAction')
@@ -63,7 +72,14 @@ beforeEach(() => {
   mocks.getLocalGitOptionsForRegisteredWorktree.mockReset().mockReturnValue({
     admissionTier: 'interactive'
   })
-  registerGitGraphActionHandlers({ store: mocks.store } as never)
+  const context = createFilesystemHandlerContext(
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: graph action handlers only pass the store to mocked resolvers.
+    mocks.store as Store,
+    undefined,
+    cancellations,
+    cancellations
+  )
+  registerGitGraphActionHandlers(context)
 })
 
 const invalidActions = [
