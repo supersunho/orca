@@ -66,24 +66,33 @@ beforeEach(() => {
   registerGitGraphActionHandlers({ store: mocks.store } as never)
 })
 
-describe('git:graphAction IPC boundary', () => {
-  it('rejects a non-boolean force before resolving the worktree or dispatching', async () => {
-    const result = await getGraphActionHandler()(
-      {},
-      {
-        worktreePath: '/repo',
-        action: { kind: 'deleteBranch', name: 'main', force: 'false' }
-      }
-    )
+const invalidActions = [
+  {
+    name: 'a non-boolean force',
+    action: { kind: 'deleteBranch', name: 'main', force: 'false' }
+  },
+  {
+    name: 'an unknown field',
+    action: { kind: 'deleteBranch', name: 'main', force: false, extra: true }
+  }
+]
 
-    expect(result).toEqual({
-      ok: false,
-      code: 'invalid-input',
-      message: 'Invalid graph action.'
+describe('git:graphAction IPC boundary', () => {
+  for (const { name, action } of invalidActions) {
+    it(`rejects ${name} before any route, worktree, or dispatch side effect`, async () => {
+      const result = await getGraphActionHandler()({}, { worktreePath: '/repo', action })
+
+      expect(result).toEqual({
+        ok: false,
+        code: 'invalid-input',
+        message: 'Invalid graph action.'
+      })
+      expect(mocks.requireReachableGitRoute).not.toHaveBeenCalled()
+      expect(mocks.assertWslUncPathRunning).not.toHaveBeenCalled()
+      expect(mocks.resolveRegisteredWorktreePath).not.toHaveBeenCalled()
+      expect(mocks.runGitGraphActionWithStashLock).not.toHaveBeenCalled()
     })
-    expect(mocks.resolveRegisteredWorktreePath).not.toHaveBeenCalled()
-    expect(mocks.runGitGraphActionWithStashLock).not.toHaveBeenCalled()
-  })
+  }
 
   it('forwards a valid action after strict parsing', async () => {
     const action = { kind: 'deleteBranch', name: 'main', force: false }
