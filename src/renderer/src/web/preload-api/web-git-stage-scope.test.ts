@@ -13,6 +13,41 @@ vi.mock('./web-runtime-worktree-catalog', () => ({
 
 import { createGitApi } from './web-git-api'
 
+describe('web client git history', () => {
+  beforeEach(() => {
+    callRuntimeResult.mockReset()
+  })
+
+  it('forwards allRefs, refFilter, search, and paging to the runtime', async () => {
+    callRuntimeResult.mockResolvedValue({
+      items: [],
+      hasIncomingChanges: false,
+      hasOutgoingChanges: false,
+      hasMore: false,
+      limit: 300,
+      scope: 'all-refs'
+    })
+
+    await createGitApi().history!({
+      worktreePath: '/repo',
+      allRefs: true,
+      refFilter: ['refs/heads/main', 'refs/tags/v1'],
+      search: 'fix',
+      limit: 300,
+      skip: 100
+    })
+
+    expect(callRuntimeResult).toHaveBeenCalledWith('git.history', {
+      worktree: 'id:wt-1',
+      allRefs: true,
+      refFilter: ['refs/heads/main', 'refs/tags/v1'],
+      search: 'fix',
+      limit: 300,
+      skip: 100
+    })
+  })
+})
+
 describe('web client whole-worktree Stage All', () => {
   beforeEach(() => {
     callRuntimeResult.mockReset()
