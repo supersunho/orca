@@ -171,7 +171,8 @@ export async function getRuntimeGitIgnoredPaths(
 
 export async function getRuntimeGitHistory(
   context: RuntimeGitContext,
-  options: GitHistoryOptions = {}
+  options: GitHistoryOptions = {},
+  transport: { signal?: AbortSignal } = {}
 ): Promise<GitHistoryResult> {
   const target = context.target
   if (target.kind === 'local' || !context.worktreeId) {
@@ -185,7 +186,7 @@ export async function getRuntimeGitHistory(
     target,
     'git.history',
     { worktree: toRuntimeWorktreeSelector(context.worktreeId), ...options },
-    { timeoutMs: 15_000 }
+    { timeoutMs: 15_000, signal: transport.signal }
   )
 }
 

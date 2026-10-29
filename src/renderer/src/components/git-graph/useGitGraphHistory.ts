@@ -5,10 +5,16 @@ import type { RuntimeClientTarget } from '../../../../shared/runtime-client-targ
 import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
 import type { GitHistoryResult } from '../../../../shared/git-history'
 
-const PAGE_SIZE = 300
+const INITIAL_PAGE_SIZE = 300
+const LOAD_MORE_PAGE_SIZE = 100
+const MAX_LOADED_COMMITS = 5_000
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError'
 }
 
 export function useGitGraphHistory({
@@ -38,6 +44,7 @@ export function useGitGraphHistory({
   const [refFilter, setRefFilter] = useState<string[]>([])
   const [refreshToken, setRefreshToken] = useState(0)
   const requestSeqRef = useRef(0)
+  const loadMoreAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSearch(searchDraft.trim()), 250)
@@ -48,6 +55,8 @@ export function useGitGraphHistory({
     if (!worktreePath || !ownerTarget) {
       return
     }
+    loadMoreAbortRef.current?.abort()
+    const controller = new AbortController()
     const seq = requestSeqRef.current + 1
     requestSeqRef.current = seq
     setStatus('loading')
@@ -61,10 +70,11 @@ export function useGitGraphHistory({
       },
       {
         allRefs: true,
-        limit: PAGE_SIZE,
+        limit: INITIAL_PAGE_SIZE,
         ...(search ? { search } : {}),
         ...(refFilter.length > 0 ? { refFilter } : {})
-      }
+      },
+      { signal: controller.signal }
     )
       .then((next) => {
         if (requestSeqRef.current !== seq) {
@@ -74,18 +84,26 @@ export function useGitGraphHistory({
         setStatus('idle')
       })
       .catch((nextError: unknown) => {
-        if (requestSeqRef.current !== seq) {
+        if (requestSeqRef.current !== seq || isAbortError(nextError)) {
           return
         }
         setStatus('error')
         setError(errorMessage(nextError))
       })
+    return () => controller.abort()
   }, [worktreePath, ownerTarget, worktreeId, search, refFilter, refreshToken])
 
   const loadMore = useCallback(async () => {
     if (!result?.hasMore || !worktreePath || !ownerTarget) {
       return
     }
+    const remaining = MAX_LOADED_COMMITS - result.items.length
+    if (remaining <= 0) {
+      return
+    }
+    loadMoreAbortRef.current?.abort()
+    const controller = new AbortController()
+    loadMoreAbortRef.current = controller
     const seq = requestSeqRef.current + 1
     requestSeqRef.current = seq
     setStatus('refreshing')
@@ -100,25 +118,34 @@ export function useGitGraphHistory({
         },
         {
           allRefs: true,
-          limit: PAGE_SIZE,
+          limit: Math.min(LOAD_MORE_PAGE_SIZE, remaining),
           skip: result.items.length,
           ...(search ? { search } : {}),
           ...(refFilter.length > 0 ? { refFilter } : {})
-        }
+        },
+        { signal: controller.signal }
       )
       if (requestSeqRef.current !== seq) {
         return
       }
-      setResult((previous) =>
-        previous ? { ...next, items: [...previous.items, ...next.items] } : next
-      )
+      setResult((previous) => {
+        if (!previous) {
+          return next
+        }
+        const items = [...previous.items, ...next.items].slice(0, MAX_LOADED_COMMITS)
+        return { ...next, items, hasMore: next.hasMore && items.length < MAX_LOADED_COMMITS }
+      })
       setStatus('idle')
     } catch (nextError: unknown) {
-      if (requestSeqRef.current !== seq) {
+      if (requestSeqRef.current !== seq || isAbortError(nextError)) {
         return
       }
       setStatus('error')
       setError(errorMessage(nextError))
+    } finally {
+      if (loadMoreAbortRef.current === controller) {
+        loadMoreAbortRef.current = null
+      }
     }
   }, [ownerTarget, refFilter, result, search, worktreeId, worktreePath])
 

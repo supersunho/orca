@@ -238,7 +238,7 @@ export default function GitGraphPane({
         </div>
       )}
 
-      {result?.scope === 'head' && (
+      {result && result.scope !== 'all-refs' && (
         <div className="shrink-0 border-b border-annotation-highlight/30 bg-annotation-highlight/5 px-3 py-1 text-[11px] text-annotation-highlight">
           {translate(
             'auto.components.git.graph.pane.oldRuntime',
