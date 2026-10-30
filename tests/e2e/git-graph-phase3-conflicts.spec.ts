@@ -160,9 +160,11 @@ test('aborts a merge conflict and restores a hard-reset backup through the UI', 
     git(seededRepoPath, ['commit', '-am', 'rebase conflict'])
     const conflictSource = git(seededRepoPath, ['rev-parse', 'HEAD'])
     const rebaseHead = conflictSource
-    const rebaseRow = orcaPage.locator('[data-testid="git-graph-row"]').filter({
-      has: orcaPage.getByRole('button', { name: defaultBranch, exact: true })
-    })
+    // The branch label may share the row with other refs, so the commit identifies the row.
+    const defaultBranchHead = git(seededRepoPath, ['rev-parse', defaultBranch])
+    const rebaseRow = orcaPage.locator(
+      `[data-testid="git-graph-row"][data-commit-id="${defaultBranchHead}"]`
+    )
     await expect(rebaseRow).toBeVisible({ timeout: 15_000 })
     await rebaseRow.click({ button: 'right' })
     await orcaPage.getByRole('menuitem', { name: `Rebase current onto ${defaultBranch}` }).click()
