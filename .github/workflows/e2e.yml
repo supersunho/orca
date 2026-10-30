@@ -701,7 +701,7 @@ jobs:
   # missing-AppData startup check and the explorer file-copy check, which need the same Windows e2e build.
   orcad-serve-mode-switch-windows:
     name: orca serve on Windows (D7 mode switch, missing AppData)
-    if: inputs.test_files == '' || contains(inputs.test_files, 'tests/e2e/orcad-serve-mode-switch.spec.ts') || contains(inputs.test_files, 'tests/e2e/windows-missing-appdata-startup.spec.ts') || contains(inputs.test_files, 'tests/e2e/file-explorer-copy-file-windows.spec.ts')
+    if: inputs.test_files == '' || contains(inputs.test_files, 'tests/e2e/orcad-serve-mode-switch.spec.ts') || contains(inputs.test_files, 'tests/e2e/windows-missing-appdata-startup.spec.ts') || contains(inputs.test_files, 'tests/e2e/file-explorer-copy-file-windows.spec.ts') || contains(inputs.test_files, 'tests/e2e/git-graph-')
     runs-on: windows-2022
     timeout-minutes: 45
     env:
@@ -756,6 +756,13 @@ jobs:
           ORCA_E2E_FORWARD_APP_LOGS: '1'
           ORCA_E2E_PRESERVE_PROFILE_LOGS_DIR: ${{ github.workspace }}\test-results\profile-logs
         run: pnpm exec playwright test --config tests/playwright.config.ts tests/e2e/orcad-serve-mode-switch.spec.ts --project=electron-headless --workers=1
+      # Git Graph draws native git output; Windows coverage proves path, git binary and renderer parity.
+      - name: Run Git Graph specs
+        if: ${{ !cancelled() && (inputs.test_files == '' || contains(inputs.test_files, 'tests/e2e/git-graph-')) }}
+        env:
+          SKIP_BUILD: '1'
+          ORCA_E2E_FORWARD_APP_LOGS: '1'
+        run: pnpm exec playwright test --config tests/playwright.config.ts tests/e2e/git-graph-pane.spec.ts tests/e2e/git-graph-phase2-actions.spec.ts tests/e2e/git-graph-phase3-conflicts.spec.ts tests/e2e/git-graph-phase3-force-push.spec.ts tests/e2e/git-graph-session-restore.spec.ts --project=electron-headless --workers=1
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

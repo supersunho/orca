@@ -357,4 +357,30 @@ describe('projectSessionTabs', () => {
     expect(resolveSessionTabRow(ws, `${api!.tabId!}::${apiSplit}`)?.leafId).toBe(apiSplit)
     expect(resolveSessionTabRow(ws, `${api!.tabId!}::not-a-pane`)).toBeNull()
   })
+
+  it('lists no row for a Git Graph tab, which only a desktop window draws', () => {
+    const { model } = build(testContext(), [{ type: 'createTerminalTab', workspace: WS }])
+    const ws = model.workspaces[WS]!
+    const groupId = ws.groups[0]!.id
+    const gitGraphTab = {
+      id: 'git-graph-tab',
+      entityId: 'git-graph-tab',
+      kind: 'git-graph',
+      createdAt: 1,
+      customTitle: null,
+      color: null
+    } as const
+    const withGitGraph = {
+      ...ws,
+      tabs: [...ws.tabs, gitGraphTab],
+      groups: ws.groups.map((group) =>
+        group.id === groupId ? { ...group, tabOrder: [...group.tabOrder, gitGraphTab.id] } : group
+      )
+    }
+
+    const snapshot = projectSessionTabs(WS, withGitGraph, views(), noFacts, false)
+
+    expect(snapshot.tabs.map((row) => row.id)).not.toContain(gitGraphTab.id)
+    expect(snapshot.tabs).toHaveLength(1)
+  })
 })

@@ -104,7 +104,7 @@ describe.skipIf(!ENABLED)('git graph history 100k commits / 1k refs', () => {
           search: 'bench commit 99999'
         })
       )
-      const renderStartedAt = performance.now()
+      const viewModelStartedAt = performance.now()
       const viewModels = buildGitHistoryViewModels(
         initial.result.items,
         buildDefaultGitHistoryColorMap(initial.result),
@@ -115,7 +115,7 @@ describe.skipIf(!ENABLED)('git graph history 100k commits / 1k refs', () => {
         false,
         initial.result.mergeBase
       )
-      const renderMs = Math.round(performance.now() - renderStartedAt)
+      const viewModelMs = Math.round(performance.now() - viewModelStartedAt)
 
       expect(initial.result.items).toHaveLength(300)
       expect(initial.result.scope).toBe('all-refs')
@@ -131,7 +131,7 @@ describe.skipIf(!ENABLED)('git graph history 100k commits / 1k refs', () => {
           refs: refCount,
           metrics: [
             ...[initial, loadMore, search].map(({ label, ms }) => ({ label, ms })),
-            { label: 'renderer-300', ms: renderMs }
+            { label: 'view-models-300', ms: viewModelMs }
           ]
         })
       )
