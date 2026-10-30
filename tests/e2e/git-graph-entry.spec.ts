@@ -12,12 +12,11 @@ test('opens Git Graph from the tab bar create menu without any prior navigation'
   await waitForSessionReady(orcaPage)
   await waitForActiveWorktree(orcaPage)
 
-  // The tab bar's create button ("새 탭" / "New tab"); the sidebar's own "+" opens
-  // a worktree dialog instead, so match this label exactly.
-  await orcaPage.getByRole('button', { name: '새 탭', exact: true }).click()
+  // The tab bar's create button; the app locale picks the label ("New tab"/"새 탭").
+  await orcaPage.getByRole('button', { name: /^(New tab|새 탭)$/ }).click()
 
   // The menu must list the graph entry with a readable label.
-  const menuItem = orcaPage.getByRole('menuitem', { name: 'Open Git Graph' })
+  const menuItem = orcaPage.getByRole('menuitem', { name: /Open Git Graph|Git Graph 열기/ })
   await expect(menuItem).toBeVisible({ timeout: 10_000 })
 
   // Selecting it opens a real Git Graph tab without any other navigation.
