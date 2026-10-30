@@ -6,6 +6,15 @@ import { useAppStore } from '../../store'
 import TabBar from '../tab-bar/TabBar'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 
+/**
+ * Git Graph is a Git-only surface: folder workspaces have no graph to draw.
+ * Git worktree ids are bare `${repoId}::${path}` with no scope prefix, so only
+ * the explicit folder scope excludes the entry.
+ */
+export function showsGitGraphEntry(worktreeId: string): boolean {
+  return parseWorkspaceKey(worktreeId)?.type !== 'folder'
+}
+
 import { TabBarQuickCommandsButton } from '../tab-bar/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './TabGroupPaneActionsMenu'
 import { useTabGroupWorkspaceModel } from './useTabGroupWorkspaceModel'
@@ -75,9 +84,7 @@ export default function TabGroupPanel({
   const rightSidebarOpen = useAppStore((state) => state.rightSidebarOpen)
   const sidebarOpen = useAppStore((state) => state.sidebarOpen)
   const model = useTabGroupWorkspaceModel({ groupId, worktreeId })
-  // Why: Git Graph is a Git-only surface; folder workspaces have no graph to draw.
-  // Bare git worktree ids have no scope prefix, so only an explicit folder scope excludes.
-  const isGitWorktree = parseWorkspaceKey(worktreeId)?.type !== 'folder'
+  const isGitWorktree = showsGitGraphEntry(worktreeId)
   const {
     activeTab,
     agentSessionItems,
