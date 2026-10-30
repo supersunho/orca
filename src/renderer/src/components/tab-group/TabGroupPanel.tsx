@@ -76,7 +76,8 @@ export default function TabGroupPanel({
   const sidebarOpen = useAppStore((state) => state.sidebarOpen)
   const model = useTabGroupWorkspaceModel({ groupId, worktreeId })
   // Why: Git Graph is a Git-only surface; folder workspaces have no graph to draw.
-  const isGitWorktree = parseWorkspaceKey(worktreeId)?.type === 'worktree'
+  // Bare git worktree ids have no scope prefix, so only an explicit folder scope excludes.
+  const isGitWorktree = parseWorkspaceKey(worktreeId)?.type !== 'folder'
   const {
     activeTab,
     agentSessionItems,
