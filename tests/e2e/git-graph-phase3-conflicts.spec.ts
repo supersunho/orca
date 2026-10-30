@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { expect, test } from './helpers/orca-app'
+import { expect, test } from './helpers/git-graph-app'
 import type { GitGraphAction, GitGraphActionResult } from '../../src/shared/git-graph-actions'
 import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
 

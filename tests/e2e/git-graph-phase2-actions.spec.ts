@@ -3,7 +3,7 @@ import { appendFileSync, mkdtempSync, rmSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { expect, test } from './helpers/orca-app'
+import { expect, test } from './helpers/git-graph-app'
 import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
 
 function git(cwd: string, args: string[]): string {
@@ -78,7 +78,7 @@ test('runs stash, sync, checkout, rename, and delete through the UI', async ({
     git(seededRepoPath, ['add', 'README.md'])
     git(seededRepoPath, ['commit', '-m', 'local push commit'])
 
-    await orcaPage.getByRole('button', { name: 'Push' }).click()
+    await orcaPage.getByRole('button', { name: 'Push', exact: true }).click()
     await orcaPage.getByRole('button', { name: 'Run' }).click()
     await expect.poll(() => git(origin, ['log', '-1', '--format=%s'])).toBe('local push commit')
 
@@ -91,7 +91,7 @@ test('runs stash, sync, checkout, rename, and delete through the UI', async ({
       git(clone, ['commit', '-am', 'remote change'])
       git(clone, ['push', 'origin', defaultBranch])
     } finally {
-      rmSync(clone, { recursive: true, force: true })
+      rmSync(clone, { recursive: true, force: true, maxRetries: 50, retryDelay: 100 })
     }
     await orcaPage.getByRole('button', { name: 'Pull' }).click()
     await orcaPage.getByRole('button', { name: 'Run' }).click()
@@ -190,6 +190,6 @@ test('runs stash, sync, checkout, rename, and delete through the UI', async ({
     } catch {
       // The disposable seeded repo may already be gone after a failed launch.
     }
-    rmSync(origin, { recursive: true, force: true })
+    rmSync(origin, { recursive: true, force: true, maxRetries: 50, retryDelay: 100 })
   }
 })

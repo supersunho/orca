@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import type { ElectronApplication, Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
+import { expect, test } from './helpers/git-graph-app'
 import { attachRepoAndOpenTerminal, createRestartSession } from './helpers/orca-restart'
 import { ensureTerminalVisible, waitForSessionReady } from './helpers/store'
 import { TEST_REPO_PATH_FILE } from './global-setup'

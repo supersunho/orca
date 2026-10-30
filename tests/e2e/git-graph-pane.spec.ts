@@ -1,10 +1,12 @@
 import { execFileSync } from 'node:child_process'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './helpers/git-graph-app'
 import { waitForSessionReady, waitForActiveWorktree } from './helpers/store'
 
 test.describe('Git Graph pane', () => {
   test.beforeEach(async ({ orcaPage }) => {
     await waitForSessionReady(orcaPage)
+    // The author and date columns hide below the compact width, so the window must be wide enough.
+    await orcaPage.setViewportSize({ width: 1280, height: 800 })
     await waitForActiveWorktree(orcaPage)
   })
 

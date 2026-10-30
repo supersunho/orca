@@ -3,7 +3,7 @@ import { appendFileSync, mkdtempSync, rmSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { expect, test } from './helpers/orca-app'
+import { expect, test } from './helpers/git-graph-app'
 import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
 
 function git(cwd: string, args: string[]): string {
@@ -63,20 +63,20 @@ test('force pushes a divergent branch with an explicit acknowledgment', async ({
       },
       { targetWorktreeId: worktreeId }
     )
-    await expect(orcaPage.getByRole('button', { name: 'Force push' })).toBeVisible({
+    await expect(orcaPage.getByRole('button', { name: 'Force push', exact: true })).toBeVisible({
       timeout: 15_000
     })
-    await orcaPage.getByRole('button', { name: 'Force push' }).click()
+    await orcaPage.getByRole('button', { name: 'Force push', exact: true }).click()
     const run = orcaPage.getByRole('button', { name: 'Run' })
     await expect(run).toBeDisabled()
     await orcaPage.getByRole('checkbox').check()
     await expect(run).toBeEnabled()
     await run.click()
     await expect
-      .poll(() => orcaPage.getByRole('button', { name: 'Force push' }).isDisabled())
+      .poll(() => orcaPage.getByRole('button', { name: 'Force push', exact: true }).isDisabled())
       .toBe(true)
     await expect
-      .poll(() => orcaPage.getByRole('button', { name: 'Force push' }).isDisabled())
+      .poll(() => orcaPage.getByRole('button', { name: 'Force push', exact: true }).isDisabled())
       .toBe(false)
 
     await expect
@@ -92,7 +92,7 @@ test('force pushes a divergent branch with an explicit acknowledgment', async ({
     } catch {
       // Remote may already be gone.
     }
-    rmSync(origin, { recursive: true, force: true })
-    rmSync(clone, { recursive: true, force: true })
+    rmSync(origin, { recursive: true, force: true, maxRetries: 50, retryDelay: 100 })
+    rmSync(clone, { recursive: true, force: true, maxRetries: 50, retryDelay: 100 })
   }
 })
