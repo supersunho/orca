@@ -176,6 +176,7 @@ export default function TabGroupPanel({
           commands.closeToLeft(item.id)
         }
       }}
+      onNewGitGraphTab={commands.openGitGraphTab}
       onNewTerminalTab={commands.newTerminalTab}
       onNewTerminalWithShell={commands.newTerminalWithShell}
       onNewBrowserTab={commands.newBrowserTab}

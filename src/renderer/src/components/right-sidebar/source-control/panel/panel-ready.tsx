@@ -1,4 +1,5 @@
 import { BulkActionBar } from '../commit/bulk-action-bar'
+import { ensureGitGraphTab } from '@/lib/ensure-git-graph-tab'
 import { SourceControlHeaderToolbar } from './header-toolbar'
 import { SourceControlNotesShelf } from '../notes/notes-shelf'
 import { SourceControlPanelContent } from './panel-content'
@@ -84,6 +85,11 @@ export function SourceControlPanelReady(props: SourceControlPanelReadyProps) {
           branchCompareRefreshDisabled={!branchSummary || branchSummary.status === 'loading'}
           diffCommentCount={diffCommentCount}
           onExpandNotes={() => setDiffCommentsExpanded(true)}
+          onOpenGitGraph={() => {
+            if (worktreePath && activeWorktreeId) {
+              ensureGitGraphTab(activeWorktreeId)
+            }
+          }}
           branchSummary={branchSummary}
           branchLineTotal={branchLineTotal}
           compareBaseRef={compareBaseRef}

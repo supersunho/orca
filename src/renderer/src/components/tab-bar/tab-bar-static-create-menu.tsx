@@ -1,5 +1,5 @@
 import React from 'react'
-import { FilePlus, FileText, Globe, Smartphone, TerminalSquare } from 'lucide-react'
+import { FilePlus, FileText, GitBranch, Globe, Smartphone, TerminalSquare } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { DropdownMenuItem, DropdownMenuShortcut } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -52,6 +52,7 @@ export function TabBarStaticCreateMenu({
 }): React.ReactNode {
   const {
     newTabMenuOrder = 'default',
+    onNewGitGraphTab,
     onNewTerminalTab,
     onNewTerminalWithShell,
     onNewBrowserTab,
@@ -144,6 +145,19 @@ export function TabBarStaticCreateMenu({
         </DropdownMenuItem>
       )
     ) : null
+  const gitGraphMenuItem =
+    !terminalOnly && onNewGitGraphTab ? (
+      <DropdownMenuItem
+        onSelect={() => {
+          queueNewActiveTerminalFocusAfterNewTabMenuClose()
+          onNewGitGraphTab()
+        }}
+        className="gap-2 rounded-[7px] px-2 py-1.5 text-[12px] leading-5 font-medium"
+      >
+        <GitBranch className="size-4 text-muted-foreground" />
+        {translate('auto.components.right.sidebar.GitHistoryPanel.openGitGraph', 'Open Git Graph')}
+      </DropdownMenuItem>
+    ) : null
   const newMarkdownMenuItem =
     !terminalOnly && onNewFileTab ? (
       <DropdownMenuItem
@@ -185,12 +199,14 @@ export function TabBarStaticCreateMenu({
       {defaultTerminalMenuItems}
       {newBrowserMenuItem}
       {newSimulatorMenuItem}
+      {gitGraphMenuItem}
       {mobileEmulatorIntroMenuBlock}
     </>
   ) : (
     <>
       {defaultTerminalMenuItems}
       {newBrowserMenuItem}
+      {gitGraphMenuItem}
       {newMarkdownMenuItem}
       {openMarkdownMenuItem}
       {newSimulatorMenuItem}

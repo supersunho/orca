@@ -19,6 +19,7 @@ export type TabBarProps = {
   onCloseToLeft: (tabId: string) => void
   /** Set only when this group is one of several splits. */
   onCloseSplitPane?: () => void
+  onNewGitGraphTab?: () => void
   onNewTerminalTab: () => void
   onNewTerminalWithShell?: (shell: string) => void
   onNewBrowserTab: () => void

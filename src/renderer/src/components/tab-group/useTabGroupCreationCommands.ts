@@ -7,6 +7,7 @@ import { createWebRuntimeSessionTerminal } from '../../runtime/web-runtime-termi
 import { isWebRuntimeSessionActive } from '../../runtime/web-runtime-session-environment'
 import { openTabBarEntry, type TabCreateEntryArgs } from '../tab-bar/tab-create-entry-action'
 import { openMobileEmulatorTab } from '@/lib/open-mobile-emulator-tab'
+import { ensureGitGraphTab } from '@/lib/ensure-git-graph-tab'
 import { ensureSimulatorTab, getSimulatorTabForWorktree } from '@/lib/ensure-simulator-tab'
 import { buildDuplicatedBrowserTabOptions } from '@/lib/duplicate-browser-tab-options'
 import { runtimeEnvironmentIdOrLocalUnlessTwin } from '@/lib/worktree-runtime-owner'
@@ -108,6 +109,9 @@ export function useTabGroupCreationCommands({
     },
     newTerminalTab: () => {
       void openNewTerminalTabInActiveWorkspace(groupId)
+    },
+    openGitGraphTab: () => {
+      ensureGitGraphTab(worktreeId)
     },
     newTerminalWithShell: (shellOverride: string) => {
       void (async () => {

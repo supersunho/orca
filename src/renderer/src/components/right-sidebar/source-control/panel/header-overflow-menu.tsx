@@ -1,5 +1,13 @@
 import React from 'react'
-import { List, ListTree, MessageSquare, MoreHorizontal, RefreshCw, Settings2 } from 'lucide-react'
+import {
+  GitBranch,
+  List,
+  ListTree,
+  MessageSquare,
+  MoreHorizontal,
+  RefreshCw,
+  Settings2
+} from 'lucide-react'
 import type { SourceControlViewMode } from '../../../../../../shared/ui-chrome-types'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -20,7 +28,8 @@ export function SourceControlHeaderOverflowMenu({
   onRefreshBranchCompare,
   branchCompareRefreshDisabled,
   diffCommentCount,
-  onExpandNotes
+  onExpandNotes,
+  onOpenGitGraph
 }: {
   sourceControlViewMode: SourceControlViewMode
   viewModeToggleDisabled: boolean
@@ -30,6 +39,7 @@ export function SourceControlHeaderOverflowMenu({
   branchCompareRefreshDisabled: boolean
   diffCommentCount: number
   onExpandNotes: () => void
+  onOpenGitGraph: () => void
 }): React.JSX.Element {
   const viewModeLabel =
     sourceControlViewMode === 'tree'
@@ -63,6 +73,14 @@ export function SourceControlHeaderOverflowMenu({
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end" className="min-w-[180px]">
+        <DropdownMenuItem onSelect={onOpenGitGraph}>
+          <GitBranch className="size-3.5" />
+          {translate(
+            'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
+            'Open Git Graph'
+          )}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem disabled={viewModeToggleDisabled} onSelect={onToggleViewMode}>
           {sourceControlViewMode === 'tree' ? (
             <List className="size-3.5" />

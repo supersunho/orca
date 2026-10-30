@@ -42,6 +42,7 @@ type SourceControlHeaderToolbarProps = {
   headDisplay?: WorktreeGitIdentityDisplay | null
   manualReviewUrl?: string | null
   branchLineTotal?: GitBranchLineTotal | null
+  onOpenGitGraph: () => void
 }
 
 function HostedReviewToolbarLink({
@@ -133,6 +134,7 @@ function renderOverflowMenu(
     | 'branchCompareRefreshDisabled'
     | 'diffCommentCount'
     | 'onExpandNotes'
+    | 'onOpenGitGraph'
   >
 ): React.JSX.Element {
   return <SourceControlHeaderOverflowMenu {...props} />
@@ -159,6 +161,7 @@ export function SourceControlHeaderToolbar({
   branchCompareRefreshDisabled,
   diffCommentCount,
   onExpandNotes,
+  onOpenGitGraph,
   branchSummary,
   compareBaseRef,
   headDisplay = null,
@@ -176,7 +179,8 @@ export function SourceControlHeaderToolbar({
     onRefreshBranchCompare,
     branchCompareRefreshDisabled,
     diffCommentCount,
-    onExpandNotes
+    onExpandNotes,
+    onOpenGitGraph
   }
 
   const expandFilter = useCallback(() => {
