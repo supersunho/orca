@@ -111,7 +111,8 @@ export function useTabGroupCreationCommands({
       void openNewTerminalTabInActiveWorkspace(groupId)
     },
     openGitGraphTab: () => {
-      ensureGitGraphTab(worktreeId)
+      // Why: target the owning group explicitly; the "+" menu can fire from an unfocused panel without updating global group focus.
+      ensureGitGraphTab(worktreeId, { groupId })
     },
     newTerminalWithShell: (shellOverride: string) => {
       void (async () => {

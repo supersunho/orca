@@ -4,6 +4,7 @@ import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { useDroppable } from '@dnd-kit/core'
 import { useAppStore } from '../../store'
 import TabBar from '../tab-bar/TabBar'
+import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 
 import { TabBarQuickCommandsButton } from '../tab-bar/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './TabGroupPaneActionsMenu'
@@ -74,6 +75,8 @@ export default function TabGroupPanel({
   const rightSidebarOpen = useAppStore((state) => state.rightSidebarOpen)
   const sidebarOpen = useAppStore((state) => state.sidebarOpen)
   const model = useTabGroupWorkspaceModel({ groupId, worktreeId })
+  // Why: Git Graph is a Git-only surface; folder workspaces have no graph to draw.
+  const isGitWorktree = parseWorkspaceKey(worktreeId)?.type === 'worktree'
   const {
     activeTab,
     agentSessionItems,
@@ -176,7 +179,7 @@ export default function TabGroupPanel({
           commands.closeToLeft(item.id)
         }
       }}
-      onNewGitGraphTab={commands.openGitGraphTab}
+      onNewGitGraphTab={isGitWorktree ? commands.openGitGraphTab : undefined}
       onNewTerminalTab={commands.newTerminalTab}
       onNewTerminalWithShell={commands.newTerminalWithShell}
       onNewBrowserTab={commands.newBrowserTab}
