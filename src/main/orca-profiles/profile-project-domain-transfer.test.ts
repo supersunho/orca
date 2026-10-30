@@ -273,7 +273,8 @@ describe('profile domain transfers', () => {
           marker !== undefined
         )
         expect(settings.futureSetting).toEqual({ retained: true })
-        vi.useFakeTimers()
+        // The write debounce measures wall time, so the fake clock must keep moving.
+        vi.useFakeTimers({ shouldAdvanceTime: true })
         const loaded = new Store({
           dataFile: join(root, 'profiles', id, 'orca-data.json'),
           profileStateAuthority: new ProfileStateSqliteAuthority(dbPath(id), id)
