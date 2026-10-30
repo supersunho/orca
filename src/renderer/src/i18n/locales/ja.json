@@ -12237,7 +12237,8 @@
             "d836037d02": "コミット",
             "8232c8b2f2": "commit {{value0}}: {{value1}} を開く",
             "e5e81e59a6": "コミットのサイズ変更",
-            "6d1e0a7c3b": "コミットファイルを読み込めませんでした"
+            "6d1e0a7c3b": "コミットファイルを読み込めませんでした",
+            "openGitGraph": "Git Graph を開く"
           },
           "HostedReviewActions": {
             "4d5fb5a284": "閉じる",

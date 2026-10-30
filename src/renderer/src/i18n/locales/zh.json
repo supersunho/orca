@@ -12237,7 +12237,8 @@
             "d836037d02": "提交",
             "8232c8b2f2": "打开 commit {{value0}}: {{value1}}",
             "e5e81e59a6": "调整提交记录高度",
-            "6d1e0a7c3b": "无法加载提交文件"
+            "6d1e0a7c3b": "无法加载提交文件",
+            "openGitGraph": "打开 Git Graph"
           },
           "HostedReviewActions": {
             "4d5fb5a284": "关闭",

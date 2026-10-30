@@ -19,11 +19,14 @@ export function getGitGraphTabForWorktree(
 /** Open or focus the single Git Graph tab for this worktree. */
 export function ensureGitGraphTab(
   worktreeId: string,
-  executionHostId?: ExecutionHostId
+  options: { executionHostId?: ExecutionHostId; groupId?: string } = {}
 ): string | null {
+  const { executionHostId, groupId } = options
   const state = useAppStore.getState()
   const targetGroupId =
-    state.activeGroupIdByWorktree[worktreeId] ?? state.groupsByWorktree[worktreeId]?.[0]?.id
+    groupId ??
+    state.activeGroupIdByWorktree[worktreeId] ??
+    state.groupsByWorktree[worktreeId]?.[0]?.id
   if (!targetGroupId) {
     return null
   }

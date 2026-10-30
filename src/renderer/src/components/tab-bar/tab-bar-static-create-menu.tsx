@@ -148,10 +148,7 @@ export function TabBarStaticCreateMenu({
   const gitGraphMenuItem =
     !terminalOnly && onNewGitGraphTab ? (
       <DropdownMenuItem
-        onSelect={() => {
-          queueNewActiveTerminalFocusAfterNewTabMenuClose()
-          onNewGitGraphTab()
-        }}
+        onSelect={onNewGitGraphTab}
         className="gap-2 rounded-[7px] px-2 py-1.5 text-[12px] leading-5 font-medium"
       >
         <GitBranch className="size-4 text-muted-foreground" />

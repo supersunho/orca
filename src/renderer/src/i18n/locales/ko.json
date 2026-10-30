@@ -12237,7 +12237,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "{{value0}} commit 열기: {{value1}}",
             "e5e81e59a6": "commits 크기 조정",
-            "6d1e0a7c3b": "commit 파일을 로드하지 못했습니다"
+            "6d1e0a7c3b": "commit 파일을 로드하지 못했습니다",
+            "openGitGraph": "Git Graph 열기"
           },
           "HostedReviewActions": {
             "4d5fb5a284": "닫기",

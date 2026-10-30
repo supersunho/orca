@@ -12531,7 +12531,8 @@
             "d836037d02": "提交",
             "8232c8b2f2": "開啟提交 {{value0}}: {{value1}}",
             "e5e81e59a6": "調整提交記錄高度",
-            "6d1e0a7c3b": "無法載入提交檔案"
+            "6d1e0a7c3b": "無法載入提交檔案",
+            "openGitGraph": "開啟 Git Graph"
           },
           "HostedReviewActions": {
             "4d5fb5a284": "關閉",
