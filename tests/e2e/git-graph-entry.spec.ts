@@ -7,6 +7,7 @@ import { waitForSessionReady, waitForActiveWorktree } from './helpers/store'
 test('opens Git Graph from the tab bar create menu without any prior navigation', async ({
   orcaPage
 }) => {
+  // Why: cold app start plus the first graph render can exceed the default E2E timeout.
   test.setTimeout(180_000)
   await waitForSessionReady(orcaPage)
   await waitForActiveWorktree(orcaPage)
