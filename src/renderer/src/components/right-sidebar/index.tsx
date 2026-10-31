@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react'
-import { PanelRight } from 'lucide-react'
+import { GitBranch, PanelRight } from 'lucide-react'
+import { ensureGitGraphTab } from '@/lib/ensure-git-graph-tab'
+import { showsGitGraphEntry } from './git-graph-entry-visibility'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
@@ -101,6 +103,40 @@ function RightSidebarInner(): React.JSX.Element {
     />
   ))
 
+  const gitWorktreeId = useAppStore((s) =>
+    s.rightSidebarOpen && showsGitGraphEntry(s.activeWorktreeId ?? '')
+      ? (s.activeWorktreeId ?? null)
+      : null
+  )
+  const gitGraphEntry =
+    rightSidebarOpen && gitWorktreeId ? (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="sidebar-toggle mr-1"
+            aria-label={translate(
+              'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
+              'Open Git Graph'
+            )}
+            title={translate(
+              'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
+              'Open Git Graph'
+            )}
+            onClick={() => ensureGitGraphTab(gitWorktreeId)}
+          >
+            <GitBranch size={16} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" sideOffset={6}>
+          {translate(
+            'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
+            'Open Git Graph'
+          )}
+        </TooltipContent>
+      </Tooltip>
+    ) : null
+
   const closeButton = rightSidebarOpen ? (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -150,6 +186,7 @@ function RightSidebarInner(): React.JSX.Element {
             onSelectTab={selectActivityTab}
             checksStatus={checksStatus}
             closeButton={closeButton}
+            gitGraphEntry={gitGraphEntry}
             activityBarPosition={activityBarPosition}
             onChangeActivityBarPosition={setActivityBarPosition}
           />

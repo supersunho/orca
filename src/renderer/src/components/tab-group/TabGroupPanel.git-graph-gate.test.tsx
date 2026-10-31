@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
-import { showsGitGraphEntry } from './TabGroupPanel'
+import { showsGitGraphEntry } from '../right-sidebar/git-graph-entry-visibility'
 
 describe('Git Graph create-menu gate', () => {
   it('shows the entry for a real git worktree id (repoId::path, the store format)', () => {

@@ -4,16 +4,7 @@ import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { useDroppable } from '@dnd-kit/core'
 import { useAppStore } from '../../store'
 import TabBar from '../tab-bar/TabBar'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
-
-/**
- * Git Graph is a Git-only surface: folder workspaces have no graph to draw.
- * Git worktree ids are bare `${repoId}::${path}` with no scope prefix, so only
- * the explicit folder scope excludes the entry.
- */
-export function showsGitGraphEntry(worktreeId: string): boolean {
-  return parseWorkspaceKey(worktreeId)?.type !== 'folder'
-}
+import { showsGitGraphEntry } from '../right-sidebar/git-graph-entry-visibility'
 
 import { TabBarQuickCommandsButton } from '../tab-bar/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './TabGroupPaneActionsMenu'
