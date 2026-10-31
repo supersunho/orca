@@ -64,7 +64,7 @@ export const GitHistoryRow = React.forwardRef<HTMLElement, GitHistoryRowProps>(
     const hiddenRefs = refs.slice(2)
     const rowTooltip = item.message || item.subject
     const rowClassName = cn(
-      'grid h-[26px] w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-1.5 px-3 py-0.5 text-left text-xs transition-colors',
+      'grid h-[26px] w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-1.5 px-3 text-left text-xs transition-colors',
       isInteractive && 'cursor-pointer hover:bg-accent/40 focus-visible:bg-accent/40',
       !isInteractive && 'cursor-default',
       isBoundaryNode && 'text-muted-foreground',
