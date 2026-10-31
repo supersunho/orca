@@ -33,8 +33,8 @@ describe('Git history graph rendering', () => {
     })
 
     // SWIMLANE_WIDTH=11: commit center 11, side-parent center 22.
-    expect(markup).toContain('d="M 11 12')
-    expect(markup).toContain('A 11 11 0 0 1 22 24')
+    expect(markup).toContain('d="M 11 14')
+    expect(markup).toContain('A 11 11 0 0 1 22 28')
   })
 
   it('shifts a surviving lane past a root to its left without changing the root color', () => {
@@ -49,7 +49,7 @@ describe('Git history graph rendering', () => {
     })
 
     expect(markup).toContain('d="M 22 0 V 6')
-    expect(markup).toContain('cx="11" cy="12" r="3.5" fill="var(--git-graph-lane-1)"')
+    expect(markup).toContain('cx="11" cy="14" r="3.5" fill="var(--git-graph-lane-1)"')
   })
 
   it('draws a surviving lane straight past a root to its right', () => {
@@ -63,8 +63,8 @@ describe('Git history graph rendering', () => {
       outputSwimlanes: [{ id: 'other', color: 'git-graph-lane-1' }]
     })
 
-    expect(markup).toContain('d="M 11 0 V 24"')
-    expect(markup).toContain('cx="22" cy="12" r="3.5" fill="var(--git-graph-lane-2)"')
+    expect(markup).toContain('d="M 11 0 V 28"')
+    expect(markup).toContain('cx="22" cy="14" r="3.5" fill="var(--git-graph-lane-2)"')
   })
 
   it('retains a lane in the rendered production model through an unrelated root', () => {
@@ -75,7 +75,7 @@ describe('Git history graph rendering', () => {
       item('base', [])
     ])
     expect(renderGraph(rows[1]!)).toContain('d="M 22 0 V 6')
-    expect(renderGraph(rows[2]!)).toContain('d="M 11 0 V 12"')
+    expect(renderGraph(rows[2]!)).toContain('d="M 11 0 V 14"')
   })
 
   it('connects duplicate lanes to one root while shifting the other history', () => {
@@ -88,14 +88,14 @@ describe('Git history graph rendering', () => {
     const markup = renderGraph(rows[2]!)
 
     expect(markup).toContain('d="M 22 0 V 6')
-    expect(markup).toContain('d="M 33 0 A 11 11 0 0 1 22 12 H 11"')
-    expect(markup).toContain('cx="11" cy="12" r="3.5" fill="var(--git-graph-lane-1)"')
-    expect(renderGraph(rows[3]!)).toContain('d="M 11 0 V 12"')
+    expect(markup).toContain('d="M 33 0 A 11 11 0 0 1 22 14 H 11"')
+    expect(markup).toContain('cx="11" cy="14" r="3.5" fill="var(--git-graph-lane-1)"')
+    expect(renderGraph(rows[3]!)).toContain('d="M 11 0 V 14"')
   })
 
   it('keeps the normal parent edge when history is truncated before the parent', () => {
     const [row] = buildGitHistoryViewModels([item('tip', ['outside-page'])])
-    expect(renderGraph(row!)).toContain('d="M 11 12 V 24"')
+    expect(renderGraph(row!)).toContain('d="M 11 14 V 28"')
   })
 
   it('keeps incoming and outgoing boundary colors and rings', () => {
@@ -124,7 +124,7 @@ describe('Git history graph rendering', () => {
       const markup = renderGraph(boundary)
       expect(markup).toContain(`fill="var(--${color})"`)
       expect(markup).toContain('stroke-dasharray="4 2"')
-      expect(markup).toContain('V 24"')
+      expect(markup).toContain('V 28"')
     }
   })
 })
