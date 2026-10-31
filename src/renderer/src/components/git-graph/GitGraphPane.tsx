@@ -164,11 +164,10 @@ export default function GitGraphPane({
   }, [viewModels, showRemoteBranches])
 
   const toggleRefFilter = useCallback(
-    (ref: GitHistoryItemRef) => {
+    (ref: GitHistoryItemRef | string) => {
+      const id = typeof ref === 'string' ? ref : ref.id
       setRefFilter((previous) =>
-        previous.includes(ref.id)
-          ? previous.filter((candidate) => candidate !== ref.id)
-          : [...previous, ref.id]
+        previous.includes(id) ? previous.filter((candidate) => candidate !== id) : [...previous, id]
       )
     },
     [setRefFilter]
@@ -268,7 +267,7 @@ export default function GitGraphPane({
         onStash={requestStash}
         branches={graphBranches}
         activeBranchFilters={refFilter}
-        onToggleBranchFilter={(refId) => toggleRefFilter({ id: refId } as GitHistoryItemRef)}
+        onToggleBranchFilter={(refId) => toggleRefFilter(refId)}
         onClearBranchFilters={() => setRefFilter([])}
         showRemoteBranches={showRemoteBranches}
         onShowRemoteBranchesChange={setShowRemoteBranches}

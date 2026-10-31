@@ -121,16 +121,32 @@ export function GitGraphToolbar({
       </Button>
       {(
         [
-          ['fetch', onFetch, ArrowDownToLine],
-          ['pull', onPull, RefreshCw],
-          ['push', onPush, ArrowUpFromLine],
-          ['forcePush', onForcePush, CloudUpload]
+          {
+            key: 'fetch',
+            handler: onFetch,
+            Icon: ArrowDownToLine,
+            label: translate('auto.components.git.graph.sync.fetch', 'Fetch')
+          },
+          {
+            key: 'pull',
+            handler: onPull,
+            Icon: RefreshCw,
+            label: translate('auto.components.git.graph.sync.pull', 'Pull')
+          },
+          {
+            key: 'push',
+            handler: onPush,
+            Icon: ArrowUpFromLine,
+            label: translate('auto.components.git.graph.sync.push', 'Push')
+          },
+          {
+            key: 'forcePush',
+            handler: onForcePush,
+            Icon: CloudUpload,
+            label: translate('auto.components.git.graph.sync.forcePush', 'Force push')
+          }
         ] as const
-      ).map(([key, handler, Icon]) => {
-        const label = translate(
-          `auto.components.git.graph.sync.${key}`,
-          { fetch: 'Fetch', pull: 'Pull', push: 'Push', forcePush: 'Force push' }[key] as string
-        )
+      ).map(({ key, handler, Icon, label }) => {
         return (
           <Tooltip key={key}>
             <TooltipTrigger asChild>
@@ -209,11 +225,9 @@ export function GitGraphToolbar({
           </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1 px-2 text-[11px]"
+                className="flex h-7 shrink-0 items-center gap-1 rounded-md border border-border px-2 text-[11px] text-foreground hover:bg-accent/50"
                 aria-label={translate('auto.components.git.graph.pane.branches', 'Branches')}
               >
                 {activeBranchFilters.length === 0
@@ -222,38 +236,37 @@ export function GitGraphToolbar({
                     ? (branches.find((b) => b.id === activeBranchFilters[0])?.name ??
                       activeBranchFilters[0])
                     : `${activeBranchFilters.length}`}
-              </Button>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="max-h-72 min-w-44 overflow-y-auto scrollbar-sleek"
-            >
-              <DropdownMenuItem
-                onSelect={() => {
-                  if (activeBranchFilters.length > 0) {
-                    onClearBranchFilters()
-                  }
-                }}
-              >
-                {translate('auto.components.git.graph.pane.showAll', 'Show All')}
-                {activeBranchFilters.length === 0 ? (
-                  <span className="ml-auto text-[11px]">✓</span>
-                ) : null}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {branches.map((branch) => {
-                const active = activeBranchFilters.includes(branch.id)
-                return (
-                  <DropdownMenuItem
-                    key={branch.id}
-                    onSelect={() => onToggleBranchFilter(branch.id)}
-                  >
-                    <GitBranch className="size-3.5 text-muted-foreground" />
-                    <span className="flex-1 truncate">{branch.name}</span>
-                    {active ? <span className="text-[11px]">✓</span> : null}
-                  </DropdownMenuItem>
-                )
-              })}
+            <DropdownMenuContent align="end" className="max-h-72 min-w-44 overflow-hidden">
+              <div className="max-h-72 overflow-y-auto scrollbar-sleek">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    if (activeBranchFilters.length > 0) {
+                      onClearBranchFilters()
+                    }
+                  }}
+                >
+                  {translate('auto.components.git.graph.pane.showAll', 'Show All')}
+                  {activeBranchFilters.length === 0 ? (
+                    <span className="ml-auto text-[11px]">✓</span>
+                  ) : null}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {branches.map((branch) => {
+                  const active = activeBranchFilters.includes(branch.id)
+                  return (
+                    <DropdownMenuItem
+                      key={branch.id}
+                      onSelect={() => onToggleBranchFilter(branch.id)}
+                    >
+                      <GitBranch className="size-3.5 text-muted-foreground" />
+                      <span className="flex-1 truncate">{branch.name}</span>
+                      {active ? <span className="text-[11px]">✓</span> : null}
+                    </DropdownMenuItem>
+                  )
+                })}
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
           <label className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
