@@ -93,6 +93,19 @@ describe('Git history graph rendering', () => {
     expect(renderGraph(rows[3]!)).toContain('d="M 11 0 V 14"')
   })
 
+  it('keeps adjacent-row vertical lanes continuous across the row boundary', () => {
+    // Regression for the reported "lines break between rows": a lane that exits
+    // this row at its bottom must re-enter the next row at the same x.
+    const rows = buildGitHistoryViewModels([item('child', ['base']), item('base', [])])
+    const childSvg = renderGraph(rows[0]!)
+    const baseSvg = renderGraph(rows[1]!)
+
+    const exitX = /M (\d+) \d+ V 28/.exec(childSvg)?.[1]
+    const entryX = /M (\d+) 0 V 14/.exec(baseSvg)?.[1]
+    expect(exitX).toBeTruthy()
+    expect(entryX).toBe(exitX)
+  })
+
   it('keeps the normal parent edge when history is truncated before the parent', () => {
     const [row] = buildGitHistoryViewModels([item('tip', ['outside-page'])])
     expect(renderGraph(row!)).toContain('d="M 11 14 V 28"')

@@ -72,7 +72,9 @@ export const GitHistoryRow = React.forwardRef<HTMLElement, GitHistoryRowProps>(
     )
     const rowContent = (
       <>
-        <GitHistoryGraphSvg viewModel={viewModel} rowPitch={26} />
+        <div className="absolute inset-y-0 left-0">
+          <GitHistoryGraphSvg viewModel={viewModel} rowPitch={26} />
+        </div>
         <div className="flex min-w-0 items-center gap-1 overflow-hidden">
           {canExpand && (
             <ChevronDown
