@@ -386,7 +386,10 @@ describe.each([false, true])('JSON recovery process death, accepted prior JSON=%
         expect(readFileSync(profile.exportPath, 'utf8')).toBe(selectedJson)
         retry(profile)
       }
-    }
+    },
+    // Why: each boundary spawns a real recovery child process; under the full
+    // changed-gate's parallel workers that can exceed the 30s default.
+    90_000
   )
 })
 
