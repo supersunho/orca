@@ -226,11 +226,18 @@ export async function loadGitHistoryFromExecutor(
   const { currentRef, branchName } = await resolveCurrentRef(git, cwd, headOid)
 
   if (scope === 'all-refs') {
+    // Why: "Show Remote Branches"가 꺼져 있으면 사용자가 원격 브랜치를 먼저
+    // 선택했더라도 그 히스토리는 노출되면 안 된다.
+    const effectiveRefFilter =
+      options.includeRemoteRefs === false
+        ? (refFilter ?? []).filter((ref) => !ref.startsWith('refs/remotes/'))
+        : (refFilter ?? [])
     const revisions =
-      refFilter ??
-      (options.includeRemoteRefs === false
-        ? ['--branches', '--tags', 'HEAD']
-        : ['--branches', '--remotes', '--tags', 'HEAD'])
+      effectiveRefFilter.length > 0
+        ? effectiveRefFilter
+        : options.includeRemoteRefs === false
+          ? ['--branches', '--tags', 'HEAD']
+          : ['--branches', '--remotes', '--tags', 'HEAD']
     const { stdout } = await git(buildHistoryLogArgs(limit, skip, search, revisions), cwd)
     const parsed = parseGitHistoryLog(stdout)
     return {

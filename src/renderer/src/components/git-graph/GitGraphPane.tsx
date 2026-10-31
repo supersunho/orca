@@ -30,6 +30,7 @@ import { GitGraphStatusErrorBanner } from './GitGraphStatusErrorBanner'
 import { GitGraphOldRuntimeBanner, isOldRuntimeHistory } from './GitGraphOldRuntimeBanner'
 import { GitGraphFolderEmpty } from './GitGraphFolderEmpty'
 import { GitGraphDetailsPanel } from './GitGraphDetailsPanel'
+import { GitGraphBranchFilterChips } from './GitGraphBranchFilterChips'
 import { GitGraphToolbar } from './GitGraphToolbar'
 import { useGitGraphActions } from './useGitGraphActions'
 import { useGitGraphAuxRefs } from './useGitGraphAuxRefs'
@@ -271,31 +272,19 @@ export default function GitGraphPane({
         onToggleBranchFilter={(refId) => toggleRefFilter(refId)}
         onClearBranchFilters={() => setRefFilter([])}
         showRemoteBranches={showRemoteBranches}
-        onShowRemoteBranchesChange={setShowRemoteBranches}
+        onShowRemoteBranchesChange={(visible) => {
+          setShowRemoteBranches(visible)
+          if (!visible) {
+            setRefFilter((previous) => previous.filter((ref) => !ref.startsWith('refs/remotes/')))
+          }
+        }}
       />
 
-      {refFilter.length > 0 && (
-        <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-3 py-1">
-          {refFilter.map((ref) => (
-            <button
-              key={ref}
-              type="button"
-              className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-accent"
-              onClick={() => setRefFilter((previous) => previous.filter((item) => item !== ref))}
-            >
-              {shortRefName(ref)}
-              <span aria-hidden="true">×</span>
-            </button>
-          ))}
-          <button
-            type="button"
-            className="px-1 text-[10px] text-muted-foreground hover:text-foreground"
-            onClick={() => setRefFilter([])}
-          >
-            {translate('auto.components.git.graph.pane.clearFilters', 'Clear filters')}
-          </button>
-        </div>
-      )}
+      <GitGraphBranchFilterChips
+        refFilter={refFilter}
+        onRemove={(ref) => setRefFilter((previous) => previous.filter((item) => item !== ref))}
+        onClear={() => setRefFilter([])}
+      />
 
       {isOldRuntimeHistory(result) && <GitGraphOldRuntimeBanner />}
 

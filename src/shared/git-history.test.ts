@@ -369,6 +369,32 @@ describe('git history loader', () => {
     expect(logCall).not.toContain('--branches')
   })
 
+  it('drops selected remote refs when includeRemoteRefs is false', async () => {
+    const { executor, calls } = createHistoryExecutor()
+
+    await loadGitHistoryFromExecutor(executor, '/repo', {
+      allRefs: true,
+      includeRemoteRefs: false,
+      refFilter: ['refs/remotes/origin/main', 'refs/heads/feature']
+    })
+
+    const logCall = calls.find((args) => args[0] === 'log')
+    expect(logCall).toEqual(expect.arrayContaining(['refs/heads/feature']))
+    expect(logCall).not.toContain('refs/remotes/origin/main')
+  })
+
+  it('keeps selected remote refs when includeRemoteRefs is not disabled', async () => {
+    const { executor, calls } = createHistoryExecutor()
+
+    await loadGitHistoryFromExecutor(executor, '/repo', {
+      allRefs: true,
+      refFilter: ['refs/remotes/origin/main']
+    })
+
+    const logCall = calls.find((args) => args[0] === 'log')
+    expect(logCall).toContain('refs/remotes/origin/main')
+  })
+
   it('drops short and option-like ref filter entries', async () => {
     const { executor, calls } = createHistoryExecutor()
 
