@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { pickGitHistoryOptions } from '../../../../shared/git-history-options'
 import type { GitHistoryResult } from '../../../../shared/git-history'
 
 const mocks = vi.hoisted(() => ({
@@ -44,6 +45,7 @@ function renderHistory(worktreeId = 'worktree-a') {
   return renderHook(
     ({ id }: { id: string }) =>
       useGitGraphHistory({
+        showRemoteBranches: true,
         worktreeId: id,
         worktreePath: `/repo/${id}`,
         ownerTarget: localTarget
@@ -52,10 +54,44 @@ function renderHistory(worktreeId = 'worktree-a') {
   )
 }
 
+describe('show remote branches option', () => {
+  it('carries includeRemoteRefs=false through option picking', () => {
+    const resolved = pickGitHistoryOptions({ allRefs: true, includeRemoteRefs: false })
+    expect(resolved.allRefs).toBe(true)
+    expect(resolved.includeRemoteRefs).toBe(false)
+  })
+
+  it('carries includeRemoteRefs=true through option picking', () => {
+    const resolved = pickGitHistoryOptions({ allRefs: true, includeRemoteRefs: true })
+    expect(resolved.allRefs).toBe(true)
+    expect(resolved.includeRemoteRefs).toBe(true)
+  })
+})
+
+it('omits remote branches from the default revisions when the toggle is off', () => {
+  const resolved = pickGitHistoryOptions({
+    allRefs: true,
+    includeRemoteRefs: false,
+    limit: 300
+  })
+  expect(resolved.allRefs).toBe(true)
+  expect(resolved.includeRemoteRefs).toBe(false)
+})
+
+it('keeps remote branches in the default revisions when the toggle is on', () => {
+  const resolved = pickGitHistoryOptions({
+    allRefs: true,
+    includeRemoteRefs: true,
+    limit: 300
+  })
+  expect(resolved.includeRemoteRefs).toBe(true)
+})
+
 describe('useGitGraphHistory', () => {
   it('does not fetch without a Git worktree path', () => {
     renderHook(() =>
       useGitGraphHistory({
+        showRemoteBranches: true,
         worktreeId: 'folder:group',
         worktreePath: null,
         ownerTarget: localTarget

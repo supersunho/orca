@@ -73,6 +73,8 @@ export type GitHistoryOptions = {
   baseRef?: string | null
   /** Query every branch, remote-tracking branch and tag instead of HEAD only. */
   allRefs?: boolean
+  /** Whether the all-refs default scope includes remote-tracking branches. */
+  includeRemoteRefs?: boolean
   /** Literal commit-message search executed by git, not over the loaded window. */
   search?: string | null
   /** Full ref names to include. Empty/absent means the default scope. */

@@ -55,6 +55,7 @@ export default function GitGraphPane({
   const gitOwnerTarget = isFolderWorkspace ? null : ownerTarget
   const worktreesByRepo = useAppStore(selectWorktreesByRepo)
   const worktrees = useMemo(() => Object.values(worktreesByRepo ?? {}).flat(), [worktreesByRepo])
+  const [showRemoteBranches, setShowRemoteBranches] = useState(false)
   const {
     result,
     status,
@@ -66,6 +67,7 @@ export default function GitGraphPane({
     refresh,
     loadMore
   } = useGitGraphHistory({
+    showRemoteBranches,
     worktreeId,
     worktreePath: gitWorktreePath,
     ownerTarget: gitOwnerTarget
@@ -148,7 +150,6 @@ export default function GitGraphPane({
 
   const { worktreeHeads, viewModels } = useGitGraphViewModels({ worktrees, result })
 
-  const [showRemoteBranches, setShowRemoteBranches] = useState(false)
   const graphBranches = useMemo(() => {
     const seen = new Map<string, { name: string; id: string }>()
     const wanted = showRemoteBranches ? ['branches', 'remote branches'] : ['branches']

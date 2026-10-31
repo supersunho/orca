@@ -226,7 +226,11 @@ export async function loadGitHistoryFromExecutor(
   const { currentRef, branchName } = await resolveCurrentRef(git, cwd, headOid)
 
   if (scope === 'all-refs') {
-    const revisions = refFilter ?? ['--branches', '--remotes', '--tags', 'HEAD']
+    const revisions =
+      refFilter ??
+      (options.includeRemoteRefs === false
+        ? ['--branches', '--tags', 'HEAD']
+        : ['--branches', '--remotes', '--tags', 'HEAD'])
     const { stdout } = await git(buildHistoryLogArgs(limit, skip, search, revisions), cwd)
     const parsed = parseGitHistoryLog(stdout)
     return {

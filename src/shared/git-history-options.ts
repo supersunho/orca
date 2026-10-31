@@ -13,6 +13,7 @@ type GitHistoryOptionSource = {
   skip?: unknown
   baseRef?: unknown
   allRefs?: unknown
+  includeRemoteRefs?: unknown
   search?: unknown
   refFilter?: unknown
 }
@@ -30,6 +31,9 @@ export function pickGitHistoryOptions(source: GitHistoryOptionSource): GitHistor
   }
   if (typeof source.allRefs === 'boolean') {
     options.allRefs = source.allRefs
+  }
+  if (typeof source.includeRemoteRefs === 'boolean') {
+    options.includeRemoteRefs = source.includeRemoteRefs
   }
   if (typeof source.search === 'string') {
     const search = normalizeGitHistorySearch(source.search)

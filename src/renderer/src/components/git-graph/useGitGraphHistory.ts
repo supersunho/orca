@@ -18,10 +18,12 @@ function isAbortError(error: unknown): boolean {
 }
 
 export function useGitGraphHistory({
+  showRemoteBranches,
   worktreeId,
   worktreePath,
   ownerTarget
 }: {
+  showRemoteBranches: boolean
   worktreeId: string
   worktreePath: string | null
   ownerTarget: RuntimeClientTarget | null
@@ -32,7 +34,7 @@ export function useGitGraphHistory({
   searchDraft: string
   setSearchDraft: (value: string) => void
   refFilter: string[]
-  setRefFilter: React.Dispatch<React.SetStateAction<string[]>>
+  setRefFilter
   refresh: () => void
   loadMore: () => Promise<void>
 } {
@@ -42,6 +44,8 @@ export function useGitGraphHistory({
   const [searchDraft, setSearchDraft] = useState('')
   const [search, setSearch] = useState('')
   const [refFilter, setRefFilter] = useState<string[]>([])
+  // Why: the graph query is all-refs; without a user filter the default revision set
+  // must follow the "Show Remote Branches" toggle or remotes stay visible regardless.
   const [refreshToken, setRefreshToken] = useState(0)
   const requestSeqRef = useRef(0)
   const loadMoreAbortRef = useRef<AbortController | null>(null)
@@ -72,6 +76,7 @@ export function useGitGraphHistory({
       },
       {
         allRefs: true,
+        includeRemoteRefs: showRemoteBranches,
         limit: INITIAL_PAGE_SIZE,
         ...(search ? { search } : {}),
         ...(refFilter.length > 0 ? { refFilter } : {})
@@ -97,7 +102,7 @@ export function useGitGraphHistory({
       loadMoreAbortRef.current?.abort()
       loadMoreAbortRef.current = null
     }
-  }, [worktreePath, ownerTarget, worktreeId, search, refFilter, refreshToken])
+  }, [worktreePath, ownerTarget, worktreeId, search, refFilter, showRemoteBranches, refreshToken])
 
   const loadMore = useCallback(async () => {
     if (status !== 'idle' || !result?.hasMore || !worktreePath || !ownerTarget) {
@@ -124,6 +129,7 @@ export function useGitGraphHistory({
         },
         {
           allRefs: true,
+          includeRemoteRefs: showRemoteBranches,
           limit: Math.min(LOAD_MORE_PAGE_SIZE, remaining),
           skip: result.items.length,
           ...(search ? { search } : {}),
@@ -153,7 +159,7 @@ export function useGitGraphHistory({
         loadMoreAbortRef.current = null
       }
     }
-  }, [ownerTarget, refFilter, result, search, status, worktreeId, worktreePath])
+  }, [ownerTarget, refFilter, result, search, showRemoteBranches, status, worktreeId, worktreePath])
 
   const refresh = useCallback(() => setRefreshToken((token) => token + 1), [])
 
