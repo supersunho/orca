@@ -38,7 +38,10 @@ const baseProps = {
   onRemotes: vi.fn(),
   branches: [],
   activeBranchFilters: [],
-  onToggleBranchFilter: vi.fn()
+  onToggleBranchFilter: vi.fn(),
+  onClearBranchFilters: vi.fn(),
+  showRemoteBranches: false,
+  onShowRemoteBranchesChange: vi.fn()
 }
 
 describe('GitGraphToolbar stash rows toggle', () => {

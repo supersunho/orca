@@ -17620,7 +17620,10 @@
             "folderWorkspace": "Git Graph is only available for Git worktrees.",
             "resizeAuthor": "Resize author column",
             "resizeDate": "Resize date column",
-            "tableLabel": "Commit graph"
+            "tableLabel": "Commit graph",
+            "branchesLabel": "Branches:",
+            "showAll": "Show All",
+            "showRemoteBranches": "Show Remote Branches"
           },
           "row": {
             "worktreeHead": "Worktree HEAD: {{value0}}",

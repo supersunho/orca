@@ -54,7 +54,10 @@ export function GitGraphToolbar({
   onRemotes,
   branches,
   activeBranchFilters,
-  onToggleBranchFilter
+  onToggleBranchFilter,
+  onClearBranchFilters,
+  showRemoteBranches,
+  onShowRemoteBranchesChange
 }: {
   branchLabel: string
   count: number
@@ -83,6 +86,9 @@ export function GitGraphToolbar({
   branches: readonly { name: string; id: string }[]
   activeBranchFilters: readonly string[]
   onToggleBranchFilter: (refId: string) => void
+  onClearBranchFilters: () => void
+  showRemoteBranches: boolean
+  onShowRemoteBranchesChange: (visible: boolean) => void
 }): React.JSX.Element {
   return (
     <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border px-3">
@@ -197,40 +203,69 @@ export function GitGraphToolbar({
         </Button>
       )}
       {branches.length > 0 && (
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label={translate('auto.components.git.graph.pane.branches', 'Branches')}
-                >
-                  <GitBranch className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={6}>
-              {translate('auto.components.git.graph.pane.branches', 'Branches')}
-            </TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent
-            align="end"
-            className="max-h-72 min-w-44 overflow-y-auto scrollbar-sleek"
-          >
-            {branches.map((branch) => {
-              const active = activeBranchFilters.includes(branch.id)
-              return (
-                <DropdownMenuItem key={branch.id} onSelect={() => onToggleBranchFilter(branch.id)}>
-                  <GitBranch className="size-3.5 text-muted-foreground" />
-                  <span className="flex-1 truncate">{branch.name}</span>
-                  {active ? <span className="text-[11px]">✓</span> : null}
-                </DropdownMenuItem>
-              )
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[11px] font-medium text-muted-foreground">
+            {translate('auto.components.git.graph.pane.branchesLabel', 'Branches:')}
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 px-2 text-[11px]"
+                aria-label={translate('auto.components.git.graph.pane.branches', 'Branches')}
+              >
+                {activeBranchFilters.length === 0
+                  ? translate('auto.components.git.graph.pane.showAll', 'Show All')
+                  : activeBranchFilters.length === 1
+                    ? (branches.find((b) => b.id === activeBranchFilters[0])?.name ??
+                      activeBranchFilters[0])
+                    : `${activeBranchFilters.length}`}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="max-h-72 min-w-44 overflow-y-auto scrollbar-sleek"
+            >
+              <DropdownMenuItem
+                onSelect={() => {
+                  if (activeBranchFilters.length > 0) {
+                    onClearBranchFilters()
+                  }
+                }}
+              >
+                {translate('auto.components.git.graph.pane.showAll', 'Show All')}
+                {activeBranchFilters.length === 0 ? (
+                  <span className="ml-auto text-[11px]">✓</span>
+                ) : null}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {branches.map((branch) => {
+                const active = activeBranchFilters.includes(branch.id)
+                return (
+                  <DropdownMenuItem
+                    key={branch.id}
+                    onSelect={() => onToggleBranchFilter(branch.id)}
+                  >
+                    <GitBranch className="size-3.5 text-muted-foreground" />
+                    <span className="flex-1 truncate">{branch.name}</span>
+                    {active ? <span className="text-[11px]">✓</span> : null}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <label className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+            <input
+              type="checkbox"
+              className="size-3 accent-[var(--primary)]"
+              checked={showRemoteBranches}
+              onChange={(event) => onShowRemoteBranchesChange(event.target.checked)}
+            />
+            {translate('auto.components.git.graph.pane.showRemoteBranches', 'Show Remote Branches')}
+          </label>
+        </div>
       )}
       <Tooltip>
         <TooltipTrigger asChild>

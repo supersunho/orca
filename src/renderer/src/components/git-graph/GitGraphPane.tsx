@@ -148,18 +148,20 @@ export default function GitGraphPane({
 
   const { worktreeHeads, viewModels } = useGitGraphViewModels({ worktrees, result })
 
+  const [showRemoteBranches, setShowRemoteBranches] = useState(false)
   const graphBranches = useMemo(() => {
     const seen = new Map<string, { name: string; id: string }>()
+    const wanted = showRemoteBranches ? ['branches', 'remote branches'] : ['branches']
     for (const viewModel of viewModels) {
       for (const ref of viewModel.historyItem.references ?? []) {
-        if (ref.category !== 'branches' || seen.has(ref.id)) {
+        if (!ref.category || !wanted.includes(ref.category) || seen.has(ref.id)) {
           continue
         }
         seen.set(ref.id, { name: ref.name, id: ref.id })
       }
     }
     return [...seen.values()]
-  }, [viewModels])
+  }, [viewModels, showRemoteBranches])
 
   const toggleRefFilter = useCallback(
     (ref: GitHistoryItemRef) => {
@@ -267,6 +269,9 @@ export default function GitGraphPane({
         branches={graphBranches}
         activeBranchFilters={refFilter}
         onToggleBranchFilter={(refId) => toggleRefFilter({ id: refId } as GitHistoryItemRef)}
+        onClearBranchFilters={() => setRefFilter([])}
+        showRemoteBranches={showRemoteBranches}
+        onShowRemoteBranchesChange={setShowRemoteBranches}
       />
 
       {refFilter.length > 0 && (

@@ -17,6 +17,26 @@ function renderGraph(viewModel: GitHistoryItemViewModel): string {
 }
 
 describe('Git history graph rendering', () => {
+  it('arcs a two-parent merge from the commit node into the side-parent lane', () => {
+    // Production model: merge commit at lane 0, side parent at lane 1.
+    const markup = renderGraph({
+      historyItem: item('merge', ['first', 'second']),
+      kind: 'node',
+      inputSwimlanes: [
+        { id: 'merge', color: 'git-graph-lane-1' },
+        { id: 'second', color: 'git-graph-lane-2' }
+      ],
+      outputSwimlanes: [
+        { id: 'first', color: 'git-graph-lane-1' },
+        { id: 'second', color: 'git-graph-lane-2' }
+      ]
+    })
+
+    // SWIMLANE_WIDTH=11: commit center 11, side-parent center 22.
+    expect(markup).toContain('d="M 11 12')
+    expect(markup).toContain('A 11 11 0 0 1 22 24')
+  })
+
   it('shifts a surviving lane past a root to its left without changing the root color', () => {
     const markup = renderGraph({
       historyItem: item('root', []),

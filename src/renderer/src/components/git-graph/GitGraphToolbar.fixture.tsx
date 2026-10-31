@@ -31,7 +31,10 @@ const props = {
   onRemotes: noop,
   branches: [],
   activeBranchFilters: [],
-  onToggleBranchFilter: noop
+  onToggleBranchFilter: noop,
+  onClearBranchFilters: noop,
+  showRemoteBranches: false,
+  onShowRemoteBranchesChange: noop
 }
 
 export const defaultView = defineFixture({

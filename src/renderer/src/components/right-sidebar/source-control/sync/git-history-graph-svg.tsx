@@ -121,10 +121,8 @@ export function GitHistoryGraphSvg({
         key={`merge-parent-${parentId}`}
         color={outputSwimlanes[parentOutputIndex]!.color}
         d={[
-          `M ${SWIMLANE_WIDTH * (parentOutputIndex + 1)} ${SWIMLANE_HEIGHT / 2}`,
-          `A ${SWIMLANE_WIDTH} ${SWIMLANE_WIDTH} 0 0 1 ${SWIMLANE_WIDTH * (parentOutputIndex + 2)} ${SWIMLANE_HEIGHT}`,
-          `M ${SWIMLANE_WIDTH * (parentOutputIndex + 1)} ${SWIMLANE_HEIGHT / 2}`,
-          `H ${SWIMLANE_WIDTH * (circleIndex + 1)}`
+          `M ${SWIMLANE_WIDTH * (circleIndex + 1)} ${SWIMLANE_HEIGHT / 2}`,
+          `A ${SWIMLANE_WIDTH} ${SWIMLANE_WIDTH} 0 0 1 ${SWIMLANE_WIDTH * (parentOutputIndex + 1)} ${SWIMLANE_HEIGHT}`
         ].join(' ')}
       />
     )
