@@ -1,4 +1,4 @@
-import React from 'react'
+import type { ReactElement } from 'react'
 import { translate } from '@/i18n/i18n'
 import { shortRefName } from './git-graph-row-refs'
 
@@ -11,7 +11,7 @@ export function GitGraphBranchFilterChips({
   refFilter: readonly string[]
   onRemove: (ref: string) => void
   onClear: () => void
-}): React.JSX.Element | null {
+}): ReactElement | null {
   if (refFilter.length === 0) {
     return null
   }
