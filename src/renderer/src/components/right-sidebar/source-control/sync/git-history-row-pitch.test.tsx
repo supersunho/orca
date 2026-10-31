@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { GitHistoryRow } from './git-history-row'
@@ -33,12 +33,7 @@ describe('GitHistoryRow pitch', () => {
   it('renders the svg with the matching 26px pitch', () => {
     const markup = renderToStaticMarkup(
       <TooltipProvider>
-        <GitHistoryRow
-          viewModel={viewModel()}
-          expanded={false}
-          onToggle={vi.fn()}
-          onRefresh={vi.fn()}
-        />
+        <GitHistoryRow viewModel={viewModel()} expanded={false} />
       </TooltipProvider>
     )
     expect(markup).toContain('height="26"')
