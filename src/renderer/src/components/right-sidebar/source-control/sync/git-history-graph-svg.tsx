@@ -86,7 +86,7 @@ export function GitHistoryGraphSvg({
           <GraphPath
             key={`vertical-${inputSwimlanes[index]!.id}`}
             color={color}
-            d={`M ${SWIMLANE_WIDTH * (index + 1)} 0 V ${rowPitch}`}
+            d={`M ${SWIMLANE_WIDTH * (index + 1)} -1 V ${rowPitch + 1}`}
           />
         )
       } else {
@@ -95,7 +95,7 @@ export function GitHistoryGraphSvg({
             key={`shift-${inputSwimlanes[index]!.id}-${outputSwimlanes[outputSwimlaneIndex]!.id}`}
             color={color}
             d={[
-              `M ${SWIMLANE_WIDTH * (index + 1)} 0`,
+              `M ${SWIMLANE_WIDTH * (index + 1)} -1`,
               'V 6',
               `A ${SWIMLANE_CURVE_RADIUS} ${rowPitch / 4} 0 0 1 ${
                 SWIMLANE_WIDTH * (index + 1) - SWIMLANE_CURVE_RADIUS
@@ -104,7 +104,7 @@ export function GitHistoryGraphSvg({
               `A ${SWIMLANE_CURVE_RADIUS} ${rowPitch / 4} 0 0 0 ${
                 SWIMLANE_WIDTH * (outputSwimlaneIndex + 1)
               } ${rowPitch / 2 + SWIMLANE_CURVE_RADIUS}`,
-              `V ${rowPitch}`
+              `V ${rowPitch + 1}`
             ].join(' ')}
           />
         )
@@ -136,7 +136,7 @@ export function GitHistoryGraphSvg({
       <GraphPath
         key="into-node"
         color={inputSwimlanes[inputIndex]!.color}
-        d={`M ${SWIMLANE_WIDTH * (circleIndex + 1)} 0 V ${rowPitch / 2}`}
+        d={`M ${SWIMLANE_WIDTH * (circleIndex + 1)} -1 V ${rowPitch / 2}`}
       />
     )
   }
@@ -145,7 +145,7 @@ export function GitHistoryGraphSvg({
       <GraphPath
         key="out-of-node"
         color={circleColor}
-        d={`M ${SWIMLANE_WIDTH * (circleIndex + 1)} ${rowPitch / 2} V ${rowPitch}`}
+        d={`M ${SWIMLANE_WIDTH * (circleIndex + 1)} ${rowPitch / 2} V ${rowPitch + 1}`}
       />
     )
   }

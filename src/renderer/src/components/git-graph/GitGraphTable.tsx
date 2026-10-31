@@ -165,7 +165,7 @@ export function GitGraphTable({
     getScrollElement: () => scrollRef.current,
     estimateSize: (index) => {
       const kind = entries[index]?.kind
-      return kind === 'load-more' ? 44 : kind === 'uncommitted' || kind === 'stash' ? 29 : 32
+      return kind === 'load-more' ? 44 : kind === 'uncommitted' || kind === 'stash' ? 29 : 28
     },
     overscan: 10,
     initialRect: { width: 0, height: 600 },

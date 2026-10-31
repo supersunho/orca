@@ -48,7 +48,7 @@ describe('Git history graph rendering', () => {
       outputSwimlanes: [{ id: 'other', color: 'git-graph-lane-2' }]
     })
 
-    expect(markup).toContain('d="M 22 0 V 6')
+    expect(markup).toContain('d="M 22 -1 V 6')
     expect(markup).toContain('cx="11" cy="14" r="3.5" fill="var(--git-graph-lane-1)"')
   })
 
@@ -63,7 +63,7 @@ describe('Git history graph rendering', () => {
       outputSwimlanes: [{ id: 'other', color: 'git-graph-lane-1' }]
     })
 
-    expect(markup).toContain('d="M 11 0 V 28"')
+    expect(markup).toContain('d="M 11 -1 V 29"')
     expect(markup).toContain('cx="22" cy="14" r="3.5" fill="var(--git-graph-lane-2)"')
   })
 
@@ -74,8 +74,8 @@ describe('Git history graph rendering', () => {
       item('other', ['base']),
       item('base', [])
     ])
-    expect(renderGraph(rows[1]!)).toContain('d="M 22 0 V 6')
-    expect(renderGraph(rows[2]!)).toContain('d="M 11 0 V 14"')
+    expect(renderGraph(rows[1]!)).toContain('d="M 22 -1 V 6')
+    expect(renderGraph(rows[2]!)).toContain('d="M 11 -1 V 15"')
   })
 
   it('connects duplicate lanes to one root while shifting the other history', () => {
@@ -87,10 +87,10 @@ describe('Git history graph rendering', () => {
     ])
     const markup = renderGraph(rows[2]!)
 
-    expect(markup).toContain('d="M 22 0 V 6')
+    expect(markup).toContain('d="M 22 -1 V 6')
     expect(markup).toContain('d="M 33 0 A 11 14 0 0 1 22 14 H 11"')
     expect(markup).toContain('cx="11" cy="14" r="3.5" fill="var(--git-graph-lane-1)"')
-    expect(renderGraph(rows[3]!)).toContain('d="M 11 0 V 14"')
+    expect(renderGraph(rows[3]!)).toContain('d="M 11 -1 V 29"')
   })
 
   it('keeps adjacent-row vertical lanes continuous across the row boundary', () => {
@@ -108,7 +108,7 @@ describe('Git history graph rendering', () => {
 
   it('keeps the normal parent edge when history is truncated before the parent', () => {
     const [row] = buildGitHistoryViewModels([item('tip', ['outside-page'])])
-    expect(renderGraph(row!)).toContain('d="M 11 14 V 28"')
+    expect(renderGraph(row!)).toContain('d="M 11 14 V 29"')
   })
 
   it('keeps incoming and outgoing boundary colors and rings', () => {
