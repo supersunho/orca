@@ -6,6 +6,7 @@ import { waitForSessionReady, waitForActiveWorktree } from './helpers/store'
 test('shows the Git Graph entry in the sidebar header and opens the graph', async ({
   orcaPage
 }) => {
+  // Why: cold app start plus first graph render can exceed the default E2E timeout.
   test.setTimeout(180_000)
   await waitForSessionReady(orcaPage)
   await waitForActiveWorktree(orcaPage)
