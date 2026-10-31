@@ -17623,7 +17623,8 @@
             "tableLabel": "Commit graph",
             "branchesLabel": "Branches:",
             "showAll": "Show All",
-            "showRemoteBranches": "Show Remote Branches"
+            "showRemoteBranches": "Show Remote Branches",
+            "branches": "Branches"
           },
           "row": {
             "worktreeHead": "Worktree HEAD: {{value0}}",
