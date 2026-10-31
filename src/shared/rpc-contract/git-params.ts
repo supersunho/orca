@@ -85,6 +85,7 @@ export const GitHistory = WorktreeSelector.extend({
   skip: z.number().int().min(0).max(10_000_000).optional(),
   baseRef: z.string().nullable().optional(),
   allRefs: z.boolean().optional(),
+  includeRemoteRefs: z.boolean().optional(),
   search: z.string().max(500).nullable().optional(),
   refFilter: z
     .array(
