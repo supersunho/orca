@@ -7,10 +7,10 @@ import {
   type GitHistoryItemViewModel
 } from '../../../../../../shared/git-history-graph'
 
-const SWIMLANE_HEIGHT = 28
+const ROW_PITCH_GIT_GRAPH = 28
 const SWIMLANE_WIDTH = 11
 const SWIMLANE_CURVE_RADIUS = 5
-const SWIMLANE_NODE_Y = SWIMLANE_HEIGHT / 2
+const SWIMLANE_NODE_Y = (rowPitch: number) => rowPitch / 2
 const CIRCLE_RADIUS = 3.5
 const CIRCLE_STROKE_WIDTH = 1.5
 
@@ -39,9 +39,12 @@ function GraphPath({
 }
 
 export function GitHistoryGraphSvg({
-  viewModel
+  viewModel,
+  rowPitch = ROW_PITCH_GIT_GRAPH
 }: {
   viewModel: GitHistoryItemViewModel
+  /** The rendered row's outer height: lanes must span it exactly or they break between rows. */
+  rowPitch?: number
 }): React.JSX.Element {
   const historyItem = viewModel.historyItem
   const inputSwimlanes = viewModel.inputSwimlanes
@@ -63,7 +66,7 @@ export function GitHistoryGraphSvg({
             color={color}
             d={[
               `M ${SWIMLANE_WIDTH * (index + 1)} 0`,
-              `A ${SWIMLANE_WIDTH} ${SWIMLANE_WIDTH} 0 0 1 ${SWIMLANE_WIDTH * index} ${SWIMLANE_NODE_Y}`,
+              `A ${SWIMLANE_WIDTH} ${rowPitch / 2} 0 0 1 ${SWIMLANE_WIDTH * index} ${SWIMLANE_NODE_Y(rowPitch)}`,
               `H ${SWIMLANE_WIDTH * (circleIndex + 1)}`
             ].join(' ')}
           />
@@ -83,7 +86,7 @@ export function GitHistoryGraphSvg({
           <GraphPath
             key={`vertical-${inputSwimlanes[index]!.id}`}
             color={color}
-            d={`M ${SWIMLANE_WIDTH * (index + 1)} 0 V ${SWIMLANE_HEIGHT}`}
+            d={`M ${SWIMLANE_WIDTH * (index + 1)} 0 V ${rowPitch}`}
           />
         )
       } else {
@@ -94,14 +97,14 @@ export function GitHistoryGraphSvg({
             d={[
               `M ${SWIMLANE_WIDTH * (index + 1)} 0`,
               'V 6',
-              `A ${SWIMLANE_CURVE_RADIUS} ${SWIMLANE_CURVE_RADIUS} 0 0 1 ${
+              `A ${SWIMLANE_CURVE_RADIUS} ${rowPitch / 4} 0 0 1 ${
                 SWIMLANE_WIDTH * (index + 1) - SWIMLANE_CURVE_RADIUS
-              } ${SWIMLANE_HEIGHT / 2}`,
+              } ${rowPitch / 2}`,
               `H ${SWIMLANE_WIDTH * (outputSwimlaneIndex + 1) + SWIMLANE_CURVE_RADIUS}`,
-              `A ${SWIMLANE_CURVE_RADIUS} ${SWIMLANE_CURVE_RADIUS} 0 0 0 ${
+              `A ${SWIMLANE_CURVE_RADIUS} ${rowPitch / 4} 0 0 0 ${
                 SWIMLANE_WIDTH * (outputSwimlaneIndex + 1)
-              } ${SWIMLANE_HEIGHT / 2 + SWIMLANE_CURVE_RADIUS}`,
-              `V ${SWIMLANE_HEIGHT}`
+              } ${rowPitch / 2 + SWIMLANE_CURVE_RADIUS}`,
+              `V ${rowPitch}`
             ].join(' ')}
           />
         )
@@ -121,8 +124,8 @@ export function GitHistoryGraphSvg({
         key={`merge-parent-${parentId}`}
         color={outputSwimlanes[parentOutputIndex]!.color}
         d={[
-          `M ${SWIMLANE_WIDTH * (circleIndex + 1)} ${SWIMLANE_HEIGHT / 2}`,
-          `A ${SWIMLANE_WIDTH} ${SWIMLANE_WIDTH} 0 0 1 ${SWIMLANE_WIDTH * (parentOutputIndex + 1)} ${SWIMLANE_HEIGHT}`
+          `M ${SWIMLANE_WIDTH * (circleIndex + 1)} ${rowPitch / 2}`,
+          `A ${SWIMLANE_WIDTH} ${rowPitch / 2} 0 0 1 ${SWIMLANE_WIDTH * (parentOutputIndex + 1)} ${rowPitch}`
         ].join(' ')}
       />
     )
@@ -133,7 +136,7 @@ export function GitHistoryGraphSvg({
       <GraphPath
         key="into-node"
         color={inputSwimlanes[inputIndex]!.color}
-        d={`M ${SWIMLANE_WIDTH * (circleIndex + 1)} 0 V ${SWIMLANE_HEIGHT / 2}`}
+        d={`M ${SWIMLANE_WIDTH * (circleIndex + 1)} 0 V ${rowPitch / 2}`}
       />
     )
   }
@@ -142,13 +145,13 @@ export function GitHistoryGraphSvg({
       <GraphPath
         key="out-of-node"
         color={circleColor}
-        d={`M ${SWIMLANE_WIDTH * (circleIndex + 1)} ${SWIMLANE_HEIGHT / 2} V ${SWIMLANE_HEIGHT}`}
+        d={`M ${SWIMLANE_WIDTH * (circleIndex + 1)} ${rowPitch / 2} V ${rowPitch}`}
       />
     )
   }
 
   const cx = SWIMLANE_WIDTH * (circleIndex + 1)
-  const cy = SWIMLANE_NODE_Y
+  const cy = SWIMLANE_NODE_Y(rowPitch)
   const width = SWIMLANE_WIDTH * (Math.max(inputSwimlanes.length, outputSwimlanes.length, 1) + 1)
   const isBoundaryNode =
     viewModel.kind === 'incoming-changes' || viewModel.kind === 'outgoing-changes'
@@ -159,8 +162,8 @@ export function GitHistoryGraphSvg({
       aria-hidden="true"
       className="shrink-0 overflow-visible"
       width={width}
-      height={SWIMLANE_HEIGHT}
-      viewBox={`0 0 ${width} ${SWIMLANE_HEIGHT}`}
+      height={rowPitch}
+      viewBox={`0 0 ${width} ${rowPitch}`}
     >
       {paths}
       {viewModel.kind === 'HEAD' && (

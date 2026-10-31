@@ -34,7 +34,7 @@ describe('Git history graph rendering', () => {
 
     // SWIMLANE_WIDTH=11: commit center 11, side-parent center 22.
     expect(markup).toContain('d="M 11 14')
-    expect(markup).toContain('A 11 11 0 0 1 22 28')
+    expect(markup).toContain('A 11 14 0 0 1 22 28')
   })
 
   it('shifts a surviving lane past a root to its left without changing the root color', () => {
@@ -88,7 +88,7 @@ describe('Git history graph rendering', () => {
     const markup = renderGraph(rows[2]!)
 
     expect(markup).toContain('d="M 22 0 V 6')
-    expect(markup).toContain('d="M 33 0 A 11 11 0 0 1 22 14 H 11"')
+    expect(markup).toContain('d="M 33 0 A 11 14 0 0 1 22 14 H 11"')
     expect(markup).toContain('cx="11" cy="14" r="3.5" fill="var(--git-graph-lane-1)"')
     expect(renderGraph(rows[3]!)).toContain('d="M 11 0 V 14"')
   })
