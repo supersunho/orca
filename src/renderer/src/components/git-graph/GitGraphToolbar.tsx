@@ -1,8 +1,21 @@
 import React from 'react'
-import { Eye, EyeOff, GitBranch, RefreshCw, SlidersHorizontal } from 'lucide-react'
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Archive,
+  CloudUpload,
+  Eye,
+  EyeOff,
+  GitBranch,
+  Network,
+  RefreshCw,
+  SlidersHorizontal,
+  SquareStack
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
+  DropdownMenuItem,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
@@ -38,7 +51,10 @@ export function GitGraphToolbar({
   onStash,
   onStashes,
   onBackups,
-  onRemotes
+  onRemotes,
+  branches,
+  activeBranchFilters,
+  onToggleBranchFilter
 }: {
   branchLabel: string
   count: number
@@ -64,6 +80,9 @@ export function GitGraphToolbar({
   onStashes: () => void
   onBackups: () => void
   onRemotes: () => void
+  branches: readonly { name: string; id: string }[]
+  activeBranchFilters: readonly string[]
+  onToggleBranchFilter: (refId: string) => void
 }): React.JSX.Element {
   return (
     <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border px-3">
@@ -94,27 +113,68 @@ export function GitGraphToolbar({
       >
         <RefreshCw className={loading ? 'animate-spin' : ''} />
       </Button>
-      <Button type="button" variant="ghost" size="sm" disabled={syncBusy} onClick={onFetch}>
-        {translate('auto.components.git.graph.sync.fetch', 'Fetch')}
-      </Button>
-      <Button type="button" variant="ghost" size="sm" disabled={syncBusy} onClick={onPull}>
-        {translate('auto.components.git.graph.sync.pull', 'Pull')}
-      </Button>
-      <Button type="button" variant="ghost" size="sm" disabled={syncBusy} onClick={onPush}>
-        {translate('auto.components.git.graph.sync.push', 'Push')}
-      </Button>
-      <Button type="button" variant="ghost" size="sm" disabled={syncBusy} onClick={onForcePush}>
-        {translate('auto.components.git.graph.sync.forcePush', 'Force push')}
-      </Button>
+      {(
+        [
+          ['fetch', onFetch, ArrowDownToLine],
+          ['pull', onPull, RefreshCw],
+          ['push', onPush, ArrowUpFromLine],
+          ['forcePush', onForcePush, CloudUpload]
+        ] as const
+      ).map(([key, handler, Icon]) => {
+        const label = translate(
+          `auto.components.git.graph.sync.${key}`,
+          { fetch: 'Fetch', pull: 'Pull', push: 'Push', forcePush: 'Force push' }[key] as string
+        )
+        return (
+          <Tooltip key={key}>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label={label}
+                disabled={syncBusy}
+                onClick={handler}
+              >
+                <Icon className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={6}>
+              {label}
+            </TooltipContent>
+          </Tooltip>
+        )
+      })}
       {hasWorkingTreeChanges && (
-        <Button type="button" variant="ghost" size="sm" disabled={actionBusy} onClick={onStash}>
-          {translate('auto.components.git.graph.sync.stash', 'Stash')}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={translate('auto.components.git.graph.sync.stash', 'Stash')}
+              disabled={actionBusy}
+              onClick={onStash}
+            >
+              <Archive className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={6}>
+            {translate('auto.components.git.graph.sync.stash', 'Stash')}
+          </TooltipContent>
+        </Tooltip>
       )}
       {stashCount > 0 && (
         <>
-          <Button type="button" variant="ghost" size="sm" onClick={onStashes}>
-            {translate('auto.components.git.graph.aux.stashes', 'Stashes')} {stashCount}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label={`${translate('auto.components.git.graph.aux.stashes', 'Stashes')} ${stashCount}`}
+            onClick={onStashes}
+          >
+            <SquareStack className="size-4" />
+            <span className="text-[11px] tabular-nums">{stashCount}</span>
           </Button>
           <Button
             type="button"
@@ -136,9 +196,58 @@ export function GitGraphToolbar({
           {translate('auto.components.git.graph.aux.backups', 'Backups')} {backupCount}
         </Button>
       )}
-      <Button type="button" variant="ghost" size="sm" onClick={onRemotes}>
-        {translate('auto.components.git.graph.remote.title', 'Remotes')}
-      </Button>
+      {branches.length > 0 && (
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={translate('auto.components.git.graph.pane.branches', 'Branches')}
+                >
+                  <GitBranch className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={6}>
+              {translate('auto.components.git.graph.pane.branches', 'Branches')}
+            </TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent
+            align="end"
+            className="max-h-72 min-w-44 overflow-y-auto scrollbar-sleek"
+          >
+            {branches.map((branch) => {
+              const active = activeBranchFilters.includes(branch.id)
+              return (
+                <DropdownMenuItem key={branch.id} onSelect={() => onToggleBranchFilter(branch.id)}>
+                  <GitBranch className="size-3.5 text-muted-foreground" />
+                  <span className="flex-1 truncate">{branch.name}</span>
+                  {active ? <span className="text-[11px]">✓</span> : null}
+                </DropdownMenuItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={translate('auto.components.git.graph.remote.title', 'Remotes')}
+            onClick={onRemotes}
+          >
+            <Network className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" sideOffset={6}>
+          {translate('auto.components.git.graph.remote.title', 'Remotes')}
+        </TooltipContent>
+      </Tooltip>
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>

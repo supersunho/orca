@@ -21,7 +21,7 @@ export function graphColor(color: GitHistoryGraphColorId): string {
 function GraphPath({
   d,
   color,
-  strokeWidth = 1
+  strokeWidth = 2
 }: {
   d: string
   color: GitHistoryGraphColorId
@@ -121,9 +121,9 @@ export function GitHistoryGraphSvg({
         key={`merge-parent-${parentId}`}
         color={outputSwimlanes[parentOutputIndex]!.color}
         d={[
-          `M ${SWIMLANE_WIDTH * parentOutputIndex} ${SWIMLANE_HEIGHT / 2}`,
-          `A ${SWIMLANE_WIDTH} ${SWIMLANE_WIDTH} 0 0 1 ${SWIMLANE_WIDTH * (parentOutputIndex + 1)} ${SWIMLANE_HEIGHT}`,
-          `M ${SWIMLANE_WIDTH * parentOutputIndex} ${SWIMLANE_HEIGHT / 2}`,
+          `M ${SWIMLANE_WIDTH * (parentOutputIndex + 1)} ${SWIMLANE_HEIGHT / 2}`,
+          `A ${SWIMLANE_WIDTH} ${SWIMLANE_WIDTH} 0 0 1 ${SWIMLANE_WIDTH * (parentOutputIndex + 2)} ${SWIMLANE_HEIGHT}`,
+          `M ${SWIMLANE_WIDTH * (parentOutputIndex + 1)} ${SWIMLANE_HEIGHT / 2}`,
           `H ${SWIMLANE_WIDTH * (circleIndex + 1)}`
         ].join(' ')}
       />
@@ -208,10 +208,16 @@ export function GitHistoryGraphSvg({
         </>
       )}
       {!isBoundaryNode && viewModel.kind !== 'HEAD' && isMergeNode && (
-        <>
-          <circle cx={cx} cy={cy} r={CIRCLE_RADIUS + 1} fill={graphColor(circleColor)} />
-          <circle cx={cx} cy={cy} r={CIRCLE_RADIUS - 1.5} fill="var(--background)" />
-        </>
+        <rect
+          x={cx - CIRCLE_RADIUS - 1}
+          y={cy - CIRCLE_RADIUS - 1}
+          width={(CIRCLE_RADIUS + 1) * 2}
+          height={(CIRCLE_RADIUS + 1) * 2}
+          fill={graphColor(circleColor)}
+          stroke="var(--background)"
+          strokeWidth={CIRCLE_STROKE_WIDTH}
+          transform={`rotate(45 ${cx} ${cy})`}
+        />
       )}
       {!isBoundaryNode && viewModel.kind !== 'HEAD' && !isMergeNode && (
         <circle cx={cx} cy={cy} r={CIRCLE_RADIUS} fill={graphColor(circleColor)} />

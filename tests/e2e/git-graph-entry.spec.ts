@@ -11,9 +11,16 @@ test('shows the Git Graph entry in the sidebar header and opens the graph', asyn
   await waitForSessionReady(orcaPage)
   await waitForActiveWorktree(orcaPage)
 
-  const entry = orcaPage.getByRole('button', {
-    name: /Open Git Graph|Git Graph 열기/
-  })
+  const entry = orcaPage
+    .getByRole('button', {
+      name: /Open Git Graph|Git Graph 열기/
+    })
+    .filter({ hasNot: orcaPage.locator('svg') })
+    .or(
+      orcaPage
+        .locator('.right-sidebar-header-no-drag')
+        .getByRole('button', { name: /Open Git Graph|Git Graph 열기/ })
+    )
   await expect(entry.first()).toBeVisible({ timeout: 20_000 })
   await entry.first().click()
 

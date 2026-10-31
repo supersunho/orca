@@ -148,6 +148,19 @@ export default function GitGraphPane({
 
   const { worktreeHeads, viewModels } = useGitGraphViewModels({ worktrees, result })
 
+  const graphBranches = useMemo(() => {
+    const seen = new Map<string, { name: string; id: string }>()
+    for (const viewModel of viewModels) {
+      for (const ref of viewModel.historyItem.references ?? []) {
+        if (ref.category !== 'branches' || seen.has(ref.id)) {
+          continue
+        }
+        seen.set(ref.id, { name: ref.name, id: ref.id })
+      }
+    }
+    return [...seen.values()]
+  }, [viewModels])
+
   const toggleRefFilter = useCallback(
     (ref: GitHistoryItemRef) => {
       setRefFilter((previous) =>
@@ -251,6 +264,9 @@ export default function GitGraphPane({
         onBackups={() => setAuxDialog('backups')}
         onRemotes={() => setRemoteOpen(true)}
         onStash={requestStash}
+        branches={graphBranches}
+        activeBranchFilters={refFilter}
+        onToggleBranchFilter={(refId) => toggleRefFilter({ id: refId } as GitHistoryItemRef)}
       />
 
       {refFilter.length > 0 && (

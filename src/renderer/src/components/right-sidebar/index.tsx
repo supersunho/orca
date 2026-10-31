@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react'
-import { GitBranch, PanelRight } from 'lucide-react'
+import { PanelRight, Waypoints } from 'lucide-react'
 import { ensureGitGraphTab } from '@/lib/ensure-git-graph-tab'
 import { isFolderRepo } from '../../../../shared/repo-kind'
 import { useRepoById } from '@/store/selectors'
 import { showsGitGraphEntry } from './git-graph-entry-visibility'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { RIGHT_SIDEBAR_HEADER_NO_DRAG_CLASS_NAME } from './right-sidebar-titlebar-drag-regions'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
@@ -124,18 +125,17 @@ function RightSidebarInner(): React.JSX.Element {
       <TooltipTrigger asChild>
         <button
           type="button"
-          className="sidebar-toggle mr-1"
-          aria-label={translate(
-            'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
-            'Open Git Graph'
+          className={cn(
+            'flex h-[36px] w-9 shrink-0 items-center justify-center text-muted-foreground/60 transition-colors hover:bg-accent/50 hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            RIGHT_SIDEBAR_HEADER_NO_DRAG_CLASS_NAME
           )}
-          title={translate(
+          aria-label={translate(
             'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
             'Open Git Graph'
           )}
           onClick={() => ensureGitGraphTab(gitWorktreeId)}
         >
-          <GitBranch size={16} />
+          <Waypoints className="size-4" />
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom" sideOffset={6}>

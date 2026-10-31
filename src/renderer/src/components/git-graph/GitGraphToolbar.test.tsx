@@ -35,7 +35,10 @@ const baseProps = {
   onStash: vi.fn(),
   onStashes: vi.fn(),
   onBackups: vi.fn(),
-  onRemotes: vi.fn()
+  onRemotes: vi.fn(),
+  branches: [],
+  activeBranchFilters: [],
+  onToggleBranchFilter: vi.fn()
 }
 
 describe('GitGraphToolbar stash rows toggle', () => {

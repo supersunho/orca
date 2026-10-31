@@ -28,7 +28,10 @@ const props = {
   onStash: noop,
   onStashes: noop,
   onBackups: noop,
-  onRemotes: noop
+  onRemotes: noop,
+  branches: [],
+  activeBranchFilters: [],
+  onToggleBranchFilter: noop
 }
 
 export const defaultView = defineFixture({
