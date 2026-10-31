@@ -15,10 +15,14 @@ describe('Git Graph create-menu gate', () => {
     expect(showsGitGraphEntry('folder:abc')).toBe(false)
   })
 
-  it('does not hide the entry for unrecognized id shapes', () => {
-    // Why: TabGroupPanel only renders for a mounted git worktree, so its id is
+  it('fails closed for an empty id', () => {
+    // No mounted worktree → nothing for the graph to open.
+    expect(showsGitGraphEntry('')).toBe(false)
+  })
+
+  it('keeps the entry for unknown non-folder shapes', () => {
+    // Why: TabGroupPanel only renders for a mounted worktree, so its id is
     // trusted; parseWorkspaceKey returns null for the bare `repoId::path` form.
-    expect(showsGitGraphEntry('')).toBe(true)
     expect(showsGitGraphEntry('not-a-worktree')).toBe(true)
   })
 })

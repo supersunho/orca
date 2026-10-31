@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { GitBranch, PanelRight } from 'lucide-react'
 import { ensureGitGraphTab } from '@/lib/ensure-git-graph-tab'
+import { isFolderRepo } from '../../../../shared/repo-kind'
+import { useRepoById } from '@/store/selectors'
 import { showsGitGraphEntry } from './git-graph-entry-visibility'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
@@ -103,39 +105,44 @@ function RightSidebarInner(): React.JSX.Element {
     />
   ))
 
-  const gitWorktreeId = useAppStore((s) =>
-    s.rightSidebarOpen && showsGitGraphEntry(s.activeWorktreeId ?? '')
-      ? (s.activeWorktreeId ?? null)
-      : null
+  // Why: the entry must stay visible with the sidebar closed (that is the point
+  // of the top-right placement), so gate on the resolved worktree/repo kind only.
+  const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
+  const activeWorktreeForGraph = useAppStore((s) =>
+    activeWorktreeId ? (s.getKnownWorktreeById(activeWorktreeId) ?? null) : null
   )
-  const gitGraphEntry =
-    rightSidebarOpen && gitWorktreeId ? (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className="sidebar-toggle mr-1"
-            aria-label={translate(
-              'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
-              'Open Git Graph'
-            )}
-            title={translate(
-              'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
-              'Open Git Graph'
-            )}
-            onClick={() => ensureGitGraphTab(gitWorktreeId)}
-          >
-            <GitBranch size={16} />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" sideOffset={6}>
-          {translate(
+  const activeRepoForGraph = useRepoById(activeWorktreeForGraph?.repoId ?? null)
+  const gitWorktreeId =
+    activeWorktreeId &&
+    activeRepoForGraph &&
+    !isFolderRepo(activeRepoForGraph) &&
+    showsGitGraphEntry(activeWorktreeId)
+      ? activeWorktreeId
+      : null
+  const gitGraphEntry = gitWorktreeId ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="sidebar-toggle mr-1"
+          aria-label={translate(
             'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
             'Open Git Graph'
           )}
-        </TooltipContent>
-      </Tooltip>
-    ) : null
+          title={translate(
+            'auto.components.right.sidebar.GitHistoryPanel.openGitGraph',
+            'Open Git Graph'
+          )}
+          onClick={() => ensureGitGraphTab(gitWorktreeId)}
+        >
+          <GitBranch size={16} />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" sideOffset={6}>
+        {translate('auto.components.right.sidebar.GitHistoryPanel.openGitGraph', 'Open Git Graph')}
+      </TooltipContent>
+    </Tooltip>
+  ) : null
 
   const closeButton = rightSidebarOpen ? (
     <Tooltip>
@@ -197,7 +204,10 @@ function RightSidebarInner(): React.JSX.Element {
               {visibleItems.find((item) => item.id === effectiveTab)?.title ?? ''}
             </span>
             <TooltipProvider delayDuration={400}>
-              <div className="flex items-center">{closeButton}</div>
+              <div className="flex items-center">
+                {gitGraphEntry}
+                {closeButton}
+              </div>
             </TooltipProvider>
           </div>
         )}
